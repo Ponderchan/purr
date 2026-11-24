@@ -26,3 +26,7 @@ Read this file and `SPEC.md` before every task. `SPEC.md` is the source of truth
 3. No console errors or warnings in normal use.
 4. Commit with message `M<n>: <short summary>` and push to the current branch.
 5. Final reply: what you built, files changed, how you tested, anything you skipped or that deviates from SPEC.md.
+
+## Language
+- Always reply to the owner in Chinese (简体中文). Keep code, identifiers, commands, file names and commit messages in English.
+- Start every task with `git pull` so you have the latest rules and code.
