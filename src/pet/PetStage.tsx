@@ -46,14 +46,16 @@ const ARM_PIVOT_Y_RATIO = 1.2;
 // Warm arm colour grading: #fff0de multiply tint with ~5% lower brightness (0xf2e4d3)
 const ARM_WARM_TINT = 0xf2e4d3;
 
-// Shadow tuning (light comes from the left -> shadows fall down-right)
+// Shadow tuning (light comes from the left -> shadows fall to the right and slightly down)
 const CAT_AO_SHADOW_OFFSET = 2;
 const CAT_AO_SHADOW_OPACITY = 0.45;
 const CAT_SOFT_SHADOW_OFFSET = 10;
 const CAT_SOFT_SHADOW_OPACITY = 0.3;
-const ARM_SHADOW_TIGHT_OFFSET = 10;
+const ARM_SHADOW_TIGHT_OFFSET_X = 14;
+const ARM_SHADOW_TIGHT_OFFSET_Y = 6;
 const ARM_SHADOW_TIGHT_OPACITY = 0.4;
-const ARM_SHADOW_LIFTED_OFFSET = 26;
+const ARM_SHADOW_LIFTED_OFFSET_X = 30;
+const ARM_SHADOW_LIFTED_OFFSET_Y = 14;
 const ARM_SHADOW_LIFTED_OPACITY = 0.28;
 const ARM_LIFT_TRANSITION_SEC = 0.15;
 
@@ -634,24 +636,24 @@ export function PetStage({ imageUrl, bgUrl, catName }: PetStageProps) {
       );
       catAoShadowTexture = catAoShadowInfo.texture;
 
-      // Arm tight shadow (pressing on cat): offset ~10 px, blur ~10 px, ~40%
+      // Arm tight shadow (pressing on cat): offset (+14, +6) px, blur ~10 px, ~40%
       const armTightShadowInfo = createSilhouetteShadowTexture(
         armImg,
         512,
-        3,
+        2,
         20,
         [14, 9, 5],
         true,
-        2,
+        3,
       );
       armShadowTightTexture = armTightShadowInfo.texture;
 
-      // Arm lifted shadow (hovering off cat): offset ~26 px, blur ~24 px, ~28%
+      // Arm lifted shadow (hovering off cat): offset (+30, +14) px, blur ~24 px, ~28%
       const armLiftedShadowInfo = createSilhouetteShadowTexture(
         armImg,
         512,
-        7,
-        44,
+        5,
+        36,
         [14, 9, 5],
         true,
         3,
@@ -1613,11 +1615,14 @@ export function PetStage({ imageUrl, bgUrl, catName }: PetStageProps) {
           armSprite.rotation = armRot;
           armSprite.scale.set(armScaleX, armScaleY);
 
-          const shadowOffset =
-            ARM_SHADOW_TIGHT_OFFSET +
-            liftEased * (ARM_SHADOW_LIFTED_OFFSET - ARM_SHADOW_TIGHT_OFFSET);
-          const shadowX = handX + shadowOffset;
-          const shadowY = handY + shadowOffset;
+          const shadowOffsetX =
+            ARM_SHADOW_TIGHT_OFFSET_X +
+            liftEased * (ARM_SHADOW_LIFTED_OFFSET_X - ARM_SHADOW_TIGHT_OFFSET_X);
+          const shadowOffsetY =
+            ARM_SHADOW_TIGHT_OFFSET_Y +
+            liftEased * (ARM_SHADOW_LIFTED_OFFSET_Y - ARM_SHADOW_TIGHT_OFFSET_Y);
+          const shadowX = handX + shadowOffsetX;
+          const shadowY = handY + shadowOffsetY;
 
           const tightAlpha =
             handAlpha * ARM_SHADOW_TIGHT_OPACITY * (1 - liftEased);
