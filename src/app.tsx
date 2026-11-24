@@ -4,11 +4,13 @@ import { LocationProvider, Route, Router, useLocation } from 'preact-iso';
 import bgPhotoUrl from './assets/photo/bg.webp';
 import sampleCatUrl from './assets/photo/sample-cat.webp';
 import { t } from './i18n';
+import { getPreviewCat } from './onboard/previewStore';
 import type { PetStageProps } from './pet/PetStage';
 
 const STATIC_ROUTES = new Set([
   '/',
   '/new',
+  '/new/preview',
   '/me',
   '/about',
   '/privacy',
@@ -19,8 +21,17 @@ function normalizePath(path: string): string {
   return path.length > 1 && path.endsWith('/') ? path.slice(0, -1) : path;
 }
 
+function isPreviewRoute(path: string): boolean {
+  return normalizePath(path) === '/new/preview';
+}
+
+function isOnboardRoute(path: string): boolean {
+  return normalizePath(path) === '/new';
+}
+
 function isCatRoute(path: string): boolean {
   const normalized = normalizePath(path);
+  if (normalized === '/new/preview') return true;
   if (STATIC_ROUTES.has(normalized)) return false;
   const segments = normalized.split('/').filter(Boolean);
   return segments.length === 1;
@@ -37,6 +48,7 @@ function formatCatName(slug?: string): string {
 
 let cachedPetStage: ComponentType<PetStageProps> | null = null;
 let hasLoggedChunkFailure = false;
+let cachedOnboardPage: ComponentType | null = null;
 
 interface PlaceholderProps {
   eyebrow: string;
@@ -65,12 +77,59 @@ function FeedPage() {
 }
 
 function UploadPage() {
+  const [PageComponent, setPageComponent] = useState<ComponentType | null>(
+    () => cachedOnboardPage,
+  );
+  const [loadFailed, setLoadFailed] = useState(false);
+
+  useEffect(() => {
+    if (cachedOnboardPage) {
+      setPageComponent(() => cachedOnboardPage);
+      return;
+    }
+
+    let cancelled = false;
+    import('./onboard/OnboardPage')
+      .then((mod) => {
+        cachedOnboardPage = mod.OnboardPage;
+        if (!cancelled) {
+          setPageComponent(() => mod.OnboardPage);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setLoadFailed(true);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (loadFailed) {
+    return (
+      <section class="page-card">
+        <p class="page-eyebrow">{t('brand.frontDesk')}</p>
+        <h1 class="page-title">{t('onboard.mobileTitle')}</h1>
+        <p class="page-body">{t('onboard.errLoadSegmenter')}</p>
+        <div class="page-card-actions">
+          <a href="/" class="btn-primary">
+            {t('page.notFound.backHome')}
+          </a>
+        </div>
+      </section>
+    );
+  }
+
+  if (PageComponent) {
+    return <PageComponent />;
+  }
+
   return (
-    <PlaceholderPage
-      eyebrow={t('page.onboard.eyebrow')}
-      title={t('page.onboard.title')}
-      description={t('page.onboard.body')}
-    />
+    <div class="onboard-loading-shell" role="status" aria-busy="true">
+      <p class="onboard-loading-text">{t('onboard.preparing')}</p>
+    </div>
   );
 }
 
@@ -131,11 +190,25 @@ function NotFoundPage() {
   );
 }
 
-function StageStaticTopOverlays({ displayName }: { displayName: string }) {
+function StageStaticTopOverlays({
+  displayName,
+  avatarUrl = sampleCatUrl,
+  backHref = '/',
+  isPreview = false,
+}: {
+  displayName: string;
+  avatarUrl?: string;
+  backHref?: string;
+  isPreview?: boolean;
+}) {
   return (
     <>
       <div class="stage-mobile-bar">
-        <a href="/" class="overlay-icon-btn" aria-label={t('cat.backToLobby')}>
+        <a
+          href={backHref}
+          class="overlay-icon-btn"
+          aria-label={isPreview ? t('preview.backToEdit') : t('cat.backToLobby')}
+        >
           <svg
             aria-hidden="true"
             width="20"
@@ -152,44 +225,64 @@ function StageStaticTopOverlays({ displayName }: { displayName: string }) {
         </a>
 
         <div class="mobile-badge-chip">
-          <span class="mobile-badge-avatar">
-            <img src={sampleCatUrl} alt="" class="cat-avatar-img" />
+          <span
+            class={`mobile-badge-avatar${
+              isPreview ? ' mobile-badge-avatar--cutout' : ''
+            }`}
+          >
+            <img
+              src={avatarUrl}
+              alt=""
+              class={
+                isPreview
+                  ? 'cat-avatar-img cat-avatar-img--cutout'
+                  : 'cat-avatar-img'
+              }
+            />
           </span>
           <span class="mobile-badge-text">
             <span class="mobile-badge-name">{displayName}</span>
             <span class="mobile-badge-status">
               <span class="status-dot" aria-hidden="true" />
-              {t('cat.mobileStatus')}
+              {isPreview ? t('preview.mobileStatus') : t('cat.mobileStatus')}
             </span>
           </span>
         </div>
 
-        <button
-          type="button"
-          class="overlay-icon-btn"
-          aria-label={t('cat.moreActions')}
-        >
-          <svg
-            aria-hidden="true"
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="currentColor"
+        {isPreview ? null : (
+          <button
+            type="button"
+            class="overlay-icon-btn"
+            aria-label={t('cat.moreActions')}
           >
-            <circle cx="5" cy="12" r="1.8" />
-            <circle cx="12" cy="12" r="1.8" />
-            <circle cx="19" cy="12" r="1.8" />
-          </svg>
-        </button>
+            <svg
+              aria-hidden="true"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+            >
+              <circle cx="5" cy="12" r="1.8" />
+              <circle cx="12" cy="12" r="1.8" />
+              <circle cx="19" cy="12" r="1.8" />
+            </svg>
+          </button>
+        )}
       </div>
 
       <div class="stage-web-top">
         <span class="overlay-chip">
           <span class="status-dot" aria-hidden="true" />
           <span>
-            {t('cat.webStatusBeforeTime', { name: displayName })}
-            <span class="num">{t('cat.webStatusTime')}</span>
-            {t('cat.webStatusAfterTime')}
+            {isPreview ? (
+              t('preview.webStatus', { name: displayName })
+            ) : (
+              <>
+                {t('cat.webStatusBeforeTime', { name: displayName })}
+                <span class="num">{t('cat.webStatusTime')}</span>
+                {t('cat.webStatusAfterTime')}
+              </>
+            )}
           </span>
         </span>
       </div>
@@ -201,9 +294,7 @@ interface CatPageProps {
   slug?: string;
 }
 
-function CatPage({ slug }: CatPageProps) {
-  const catName = formatCatName(slug);
-  const displayName = catName || t('cat.defaultName');
+function usePetStageChunk() {
   const [StageComponent, setStageComponent] =
     useState<ComponentType<PetStageProps> | null>(() => cachedPetStage);
   const [loadFailed, setLoadFailed] = useState(false);
@@ -236,6 +327,153 @@ function CatPage({ slug }: CatPageProps) {
       cancelled = true;
     };
   }, []);
+
+  return { StageComponent, loadFailed };
+}
+
+function PreviewCatPage() {
+  const preview = getPreviewCat();
+  const { StageComponent, loadFailed } = usePetStageChunk();
+
+  if (!preview) {
+    return (
+      <div class="preview-empty-wrap">
+        <section class="page-card">
+          <p class="page-eyebrow">{t('brand.frontDesk')}</p>
+          <h1 class="page-title">{t('preview.emptyTitle')}</h1>
+          <p class="page-body">{t('preview.emptyBody')}</p>
+          <div class="page-card-actions">
+            <a href="/new" class="btn-primary">
+              {t('preview.goOnboard')}
+            </a>
+          </div>
+        </section>
+      </div>
+    );
+  }
+
+  const displayName = preview.name || t('cat.defaultName');
+  const cutoutUrl = preview.cutout.url;
+
+  let stageContent;
+  if (loadFailed) {
+    stageContent = (
+      <div
+        class="pet-stage pet-stage--fallback"
+        style={{ backgroundImage: `url(${bgPhotoUrl})` }}
+      >
+        <img
+          src={cutoutUrl}
+          alt={t('pet.fallbackAlt', { name: displayName })}
+          class="pet-fallback-cat"
+        />
+        <div class="pet-fallback-light" aria-hidden="true" />
+        <StageStaticTopOverlays
+          displayName={displayName}
+          avatarUrl={cutoutUrl}
+          backHref="/new"
+          isPreview
+        />
+        <p class="pet-stage-notice" role="status">
+          {t('pet.fallbackMessage', { name: displayName })}
+        </p>
+      </div>
+    );
+  } else if (StageComponent) {
+    stageContent = (
+      <StageComponent
+        imageUrl={cutoutUrl}
+        bgUrl={bgPhotoUrl}
+        catName={displayName}
+        backHref="/new"
+        isPreview
+      />
+    );
+  } else {
+    stageContent = (
+      <div
+        class="pet-stage pet-stage--loading"
+        style={{ backgroundImage: `url(${bgPhotoUrl})` }}
+        aria-busy="true"
+        aria-label={t('pet.loadingAria')}
+      >
+        <StageStaticTopOverlays
+          displayName={displayName}
+          avatarUrl={cutoutUrl}
+          backHref="/new"
+          isPreview
+        />
+        <p class="pet-stage-notice" role="status">
+          {t('pet.loading', { name: displayName })}
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div class="preview-cat-shell">
+      <div class="preview-banner" role="status">
+        <span class="preview-banner-text">
+          <span class="status-dot" aria-hidden="true" />
+          {t('preview.banner')}
+        </span>
+        <a href="/new" class="preview-banner-back">
+          {t('preview.backToEdit')}
+        </a>
+      </div>
+
+      <div class="cat-room-layout cat-room-layout--preview">
+        <section
+          class="cat-room-stage cat-room-stage--preview"
+          aria-label={t('cat.stageSectionLabel', { name: displayName })}
+        >
+          {stageContent}
+        </section>
+
+        <aside class="cat-room-panel">
+          <div class="employee-badge">
+            <span class="employee-badge-avatar employee-badge-avatar--cutout">
+              <img
+                src={cutoutUrl}
+                alt={t('cat.avatarAlt', { name: displayName })}
+                class="cat-avatar-img cat-avatar-img--cutout"
+              />
+            </span>
+            <div class="employee-badge-info">
+              <div class="employee-badge-heading">
+                <h1 class="employee-badge-name">{displayName}</h1>
+                <span class="employee-badge-role">
+                  {t('onboard.badgeRole')}
+                </span>
+              </div>
+              <span class="employee-badge-meta">
+                <span class="num">purr.si/{preview.slug}</span>
+              </span>
+              <span class="employee-badge-meta">{t('preview.badgeMeta')}</span>
+              <span class="employee-badge-tags">
+                <span class="personality-tag">{t('onboard.badgeTagNew')}</span>
+                <span class="personality-tag">
+                  {t('onboard.badgeTagPreview')}
+                </span>
+              </span>
+            </div>
+          </div>
+
+          <div class="panel-footer-actions">
+            <a href="/new" class="btn-outline">
+              {t('preview.backToEdit')}
+            </a>
+          </div>
+        </aside>
+      </div>
+    </div>
+  );
+}
+
+function CatPage({ slug }: CatPageProps) {
+  const catName = formatCatName(slug);
+  const displayName = catName || t('cat.defaultName');
+  const { StageComponent, loadFailed } = usePetStageChunk();
 
   let stageContent;
   if (loadFailed) {
@@ -350,7 +588,29 @@ function CatPage({ slug }: CatPageProps) {
   );
 }
 
-function WebHeader({ isCat, currentPath }: { isCat: boolean; currentPath: string }) {
+function WebHeader({
+  isCat,
+  isOnboard,
+  currentPath,
+}: {
+  isCat: boolean;
+  isOnboard: boolean;
+  currentPath: string;
+}) {
+  if (isOnboard) {
+    return (
+      <header class="web-header web-header--onboard">
+        <a href="/" class="web-wordmark web-wordmark--grow">
+          <span class="web-wordmark-brand">purr.si</span>
+          <span class="web-wordmark-sub">{t('brand.frontDesk')}</span>
+        </a>
+        <a href="/" class="web-header-text-link">
+          {t('onboard.backToLobby')}
+        </a>
+      </header>
+    );
+  }
+
   if (isCat) {
     return (
       <header class="web-header web-header--cat">
@@ -529,15 +789,30 @@ function AppShell() {
   const { path } = useLocation();
   const currentPath = normalizePath(path);
   const isCat = isCatRoute(path);
+  const isOnboard = isOnboardRoute(path);
+  const isPreview = isPreviewRoute(path);
 
   return (
-    <div class={`app-shell${isCat ? ' app-shell--cat' : ''}`}>
-      <WebHeader isCat={isCat} currentPath={currentPath} />
+    <div
+      class={`app-shell${isCat ? ' app-shell--cat' : ''}${
+        isOnboard ? ' app-shell--onboard' : ''
+      }`}
+    >
+      <WebHeader
+        isCat={isCat}
+        isOnboard={isOnboard}
+        currentPath={currentPath}
+      />
 
-      <main class={`main-content${isCat ? ' main-content--cat' : ''}`}>
+      <main
+        class={`main-content${isCat ? ' main-content--cat' : ''}${
+          isOnboard ? ' main-content--onboard' : ''
+        }${isPreview ? ' main-content--preview' : ''}`}
+      >
         <Router>
           <Route path="/" component={FeedPage} />
           <Route path="/new" component={UploadPage} />
+          <Route path="/new/preview" component={PreviewCatPage} />
           <Route path="/me" component={DashboardPage} />
           <Route path="/about" component={AboutPage} />
           <Route path="/privacy" component={PrivacyPage} />
@@ -547,7 +822,7 @@ function AppShell() {
         </Router>
       </main>
 
-      {isCat ? null : <MobileTabBar currentPath={currentPath} />}
+      {isCat || isOnboard ? null : <MobileTabBar currentPath={currentPath} />}
     </div>
   );
 }

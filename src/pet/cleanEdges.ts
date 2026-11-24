@@ -246,7 +246,7 @@ function featherAlpha(
 }
 
 /**
- * Cleans light matte fringes from a cut-out image with alpha:
+ * Cleans light matte fringes from a cut-out RGBA pixel buffer in place:
  * 1. Tightens soft outer matte tails and erodes alpha inward by ~1.5 px
  *    (scaled proportionally for high-resolution cut-outs).
  * 2. Feathers the eroded alpha edge by ~1 px for natural anti-aliasing.
@@ -254,41 +254,15 @@ function featherAlpha(
  *    fully-opaque interior: replaces RGB on all semi-transparent edge pixels
  *    (and outer transparent texels sampled by GPU linear filtering) and removes
  *    bright matte spill trapped along the outermost opaque rim.
- *
- * Reusable at runtime for both the bundled sample cat and M3 user uploads.
  */
-export function cleanCutoutEdges(
-  source: HTMLImageElement | HTMLCanvasElement,
+export function cleanCutoutImageData(
+  pixels: Uint8ClampedArray,
+  width: number,
+  height: number,
   options: CleanEdgesOptions = {},
-): HTMLCanvasElement {
-  const width =
-    source instanceof HTMLImageElement
-      ? source.naturalWidth || source.width
-      : source.width;
-  const height =
-    source instanceof HTMLImageElement
-      ? source.naturalHeight || source.height
-      : source.height;
+): void {
+  if (width <= 0 || height <= 0) return;
 
-  const canvas = document.createElement('canvas');
-  canvas.width = Math.max(1, width);
-  canvas.height = Math.max(1, height);
-  const ctx = canvas.getContext('2d', { willReadFrequently: true });
-  if (!ctx || width <= 0 || height <= 0) {
-    return canvas;
-  }
-
-  ctx.clearRect(0, 0, width, height);
-  ctx.drawImage(source, 0, 0, width, height);
-
-  let imageData: ImageData;
-  try {
-    imageData = ctx.getImageData(0, 0, width, height);
-  } catch {
-    return canvas;
-  }
-
-  const pixels = imageData.data;
   const n = width * height;
   const origAlpha = new Uint8Array(n);
   const chokedAlpha = new Uint8Array(n);
@@ -521,7 +495,44 @@ export function cleanCutoutEdges(
       pixels[i * 4 + 3] = finalAlpha[i];
     }
   }
+}
 
+/**
+ * Cleans light matte fringes from a cut-out image with alpha.
+ * Used once at onboarding time (and offline to pre-bake bundled sample assets).
+ */
+export function cleanCutoutEdges(
+  source: HTMLImageElement | HTMLCanvasElement,
+  options: CleanEdgesOptions = {},
+): HTMLCanvasElement {
+  const width =
+    source instanceof HTMLImageElement
+      ? source.naturalWidth || source.width
+      : source.width;
+  const height =
+    source instanceof HTMLImageElement
+      ? source.naturalHeight || source.height
+      : source.height;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, width);
+  canvas.height = Math.max(1, height);
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  if (!ctx || width <= 0 || height <= 0) {
+    return canvas;
+  }
+
+  ctx.clearRect(0, 0, width, height);
+  ctx.drawImage(source, 0, 0, width, height);
+
+  let imageData: ImageData;
+  try {
+    imageData = ctx.getImageData(0, 0, width, height);
+  } catch {
+    return canvas;
+  }
+
+  cleanCutoutImageData(imageData.data, width, height, options);
   ctx.putImageData(imageData, 0, 0);
   return canvas;
 }

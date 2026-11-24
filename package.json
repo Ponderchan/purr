@@ -10,7 +10,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@mediapipe/tasks-vision": "^1.2.3",
     "@supabase/supabase-js": "^2.49.1",
+    "heic-to": "^1.6.7",
     "pixi.js": "^8.8.1",
     "preact": "^10.26.4",
     "preact-iso": "^2.9.0"

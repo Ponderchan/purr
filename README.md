@@ -40,3 +40,8 @@ Copy `.env.example` to `.env.local` and fill in values when backend features are
 - **Build command:** `npm run build`
 - **Build output directory:** `dist`
 - **SPA fallback:** `public/_redirects` (`/* /index.html 200`)
+
+## Third-party licenses
+
+- [`heic-to`](https://github.com/hoppergee/heic-to) (wrapping `libheif`) — [LGPL-3.0](https://www.gnu.org/licenses/lgpl-3.0.en.html). Loaded dynamically as an isolated chunk only when native browser decoding fails on a HEIC/HEIF image.
+- [`@mediapipe/tasks-vision`](https://github.com/google-ai-edge/mediapipe) — [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0). Loaded dynamically on `/new` for in-browser interactive segmentation.

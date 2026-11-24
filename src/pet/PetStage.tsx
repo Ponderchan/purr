@@ -11,7 +11,6 @@ import {
 } from 'pixi.js';
 import armPhotoUrl from '../assets/photo/arm.webp';
 import { t } from '../i18n';
-import { cleanCutoutEdges } from './cleanEdges';
 import {
   PurrAudio,
   readMutedPreference,
@@ -22,6 +21,8 @@ export interface PetStageProps {
   imageUrl: string;
   bgUrl: string;
   catName?: string;
+  backHref?: string;
+  isPreview?: boolean;
 }
 
 type PetMood = 'idle' | 'petting' | 'purring' | 'melt' | 'nip';
@@ -494,7 +495,13 @@ function MuteIcon({ muted }: { muted: boolean }) {
   );
 }
 
-export function PetStage({ imageUrl, bgUrl, catName }: PetStageProps) {
+export function PetStage({
+  imageUrl,
+  bgUrl,
+  catName,
+  backHref = '/',
+  isPreview = false,
+}: PetStageProps) {
   const stageRef = useRef<HTMLDivElement | null>(null);
   const canvasHostRef = useRef<HTMLDivElement | null>(null);
   const meterFillRef = useRef<HTMLDivElement | null>(null);
@@ -668,19 +675,13 @@ export function PetStage({ imageUrl, bgUrl, catName }: PetStageProps) {
         return;
       }
 
-      // Clean light cut-out fringes at runtime (erode ~1.5 px, feather ~1 px, decontaminate edge RGB)
-      const cleanedCatCanvas = cleanCutoutEdges(catImg, {
-        erodePx: 1.5,
-        featherPx: 1.0,
-      });
-
-      const hitMask = buildHitMask(cleanedCatCanvas, 1536, 1536);
+      const hitMask = buildHitMask(catImg, 1536, 1536);
 
       bgTexture = createOwnedTexture(bgImg);
       bgVignetteTexture = createOwnedTexture(
         createVignetteCanvas(512, 0.5, 0.5, 0.14),
       );
-      catTexture = createOwnedTexture(cleanedCatCanvas);
+      catTexture = createOwnedTexture(catImg);
       armTexture = createOwnedTexture(armImg);
       brushTexture = createOwnedTexture(createSoftBrushCanvas(64));
       warmLightTexture = createOwnedTexture(createSharedWarmLightCanvas(512));
@@ -688,10 +689,10 @@ export function PetStage({ imageUrl, bgUrl, catName }: PetStageProps) {
         createVignetteCanvas(512, 0.46, 0.47, 0.24),
       );
 
-      // Build two-layer cat contact shadows from cleaned cat alpha (falling down-right)
+      // Build two-layer cat contact shadows from pre-cleaned cat alpha (falling down-right)
       // 1) Wide soft cast shadow: blur ~26 px, offset ~10 px down-right, ~30% opacity
       const catSoftShadowInfo = createSilhouetteShadowTexture(
-        cleanedCatCanvas,
+        catImg,
         440,
         10,
         56,
@@ -703,7 +704,7 @@ export function PetStage({ imageUrl, bgUrl, catName }: PetStageProps) {
 
       // 2) Tight ambient-occlusion contact shadow: blur ~4 px, offset ~2 px down-right, ~45% darkness
       const catAoShadowInfo = createSilhouetteShadowTexture(
-        cleanedCatCanvas,
+        catImg,
         512,
         2,
         16,
@@ -1841,9 +1842,9 @@ export function PetStage({ imageUrl, bgUrl, catName }: PetStageProps) {
     <>
       <div class="stage-mobile-bar">
         <a
-          href="/"
+          href={backHref}
           class="overlay-icon-btn"
-          aria-label={t('cat.backToLobby')}
+          aria-label={isPreview ? t('preview.backToEdit') : t('cat.backToLobby')}
           onPointerDown={stopPointer}
           onPointerMove={stopPointer}
           onPointerEnter={stopPointer}
@@ -1869,14 +1870,22 @@ export function PetStage({ imageUrl, bgUrl, catName }: PetStageProps) {
           onPointerMove={stopPointer}
           onPointerEnter={stopPointer}
         >
-          <span class="mobile-badge-avatar">
-            <img src={imageUrl} alt="" class="cat-avatar-img" />
+          <span
+            class={`mobile-badge-avatar${
+              isPreview ? ' mobile-badge-avatar--cutout' : ''
+            }`}
+          >
+            <img
+              src={imageUrl}
+              alt=""
+              class={isPreview ? 'cat-avatar-img cat-avatar-img--cutout' : 'cat-avatar-img'}
+            />
           </span>
           <span class="mobile-badge-text">
             <span class="mobile-badge-name">{displayName}</span>
             <span class="mobile-badge-status">
               <span class="status-dot" aria-hidden="true" />
-              {t('cat.mobileStatus')}
+              {isPreview ? t('preview.mobileStatus') : t('cat.mobileStatus')}
             </span>
           </span>
         </div>
@@ -1897,26 +1906,28 @@ export function PetStage({ imageUrl, bgUrl, catName }: PetStageProps) {
           </button>
         ) : null}
 
-        <button
-          type="button"
-          class="overlay-icon-btn"
-          aria-label={t('cat.moreActions')}
-          onPointerDown={stopPointer}
-          onPointerMove={stopPointer}
-          onPointerEnter={stopPointer}
-        >
-          <svg
-            aria-hidden="true"
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="currentColor"
+        {isPreview ? null : (
+          <button
+            type="button"
+            class="overlay-icon-btn"
+            aria-label={t('cat.moreActions')}
+            onPointerDown={stopPointer}
+            onPointerMove={stopPointer}
+            onPointerEnter={stopPointer}
           >
-            <circle cx="5" cy="12" r="1.8" />
-            <circle cx="12" cy="12" r="1.8" />
-            <circle cx="19" cy="12" r="1.8" />
-          </svg>
-        </button>
+            <svg
+              aria-hidden="true"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+            >
+              <circle cx="5" cy="12" r="1.8" />
+              <circle cx="12" cy="12" r="1.8" />
+              <circle cx="19" cy="12" r="1.8" />
+            </svg>
+          </button>
+        )}
       </div>
 
       <div class="stage-web-top">
@@ -1928,9 +1939,15 @@ export function PetStage({ imageUrl, bgUrl, catName }: PetStageProps) {
         >
           <span class="status-dot" aria-hidden="true" />
           <span>
-            {t('cat.webStatusBeforeTime', { name: displayName })}
-            <span class="num">{t('cat.webStatusTime')}</span>
-            {t('cat.webStatusAfterTime')}
+            {isPreview ? (
+              t('preview.webStatus', { name: displayName })
+            ) : (
+              <>
+                {t('cat.webStatusBeforeTime', { name: displayName })}
+                <span class="num">{t('cat.webStatusTime')}</span>
+                {t('cat.webStatusAfterTime')}
+              </>
+            )}
           </span>
         </span>
 
