@@ -10,6 +10,7 @@ import {
   Texture,
 } from 'pixi.js';
 import armPhotoUrl from '../assets/photo/arm.webp';
+import { cleanCutoutEdges } from './cleanEdges';
 import {
   PurrAudio,
   readMutedPreference,
@@ -42,13 +43,19 @@ const ARM_SLEEVE_HALF_WIDTH_RATIO = 0.245;
 const ARM_PIVOT_X_RATIO = 0.75;
 const ARM_PIVOT_Y_RATIO = 1.2;
 
-// Shadow tuning
-const CAT_SHADOW_OFFSET = 6;
-const CAT_SHADOW_OPACITY = 0.35;
-const ARM_SHADOW_TIGHT_OFFSET = 6;
-const ARM_SHADOW_TIGHT_OPACITY = 0.35;
-const ARM_SHADOW_LIFTED_OFFSET = 22;
-const ARM_SHADOW_LIFTED_OPACITY = 0.2;
+// Warm arm colour grading: #fff0de multiply tint with ~5% lower brightness (0xf2e4d3)
+const ARM_WARM_TINT = 0xf2e4d3;
+
+// Shadow tuning (light comes from the left -> shadows fall down-right)
+const CAT_AO_SHADOW_OFFSET = 2;
+const CAT_AO_SHADOW_OPACITY = 0.45;
+const CAT_SOFT_SHADOW_OFFSET = 10;
+const CAT_SOFT_SHADOW_OPACITY = 0.3;
+const ARM_SHADOW_TIGHT_OFFSET = 10;
+const ARM_SHADOW_TIGHT_OPACITY = 0.4;
+const ARM_SHADOW_LIFTED_OFFSET = 26;
+const ARM_SHADOW_LIFTED_OPACITY = 0.28;
+const ARM_LIFT_TRANSITION_SEC = 0.15;
 
 // Purr meter pacing: steady petting ~25-30 s to 100%, idle drain 1%/s after 2 s idle
 const METER_CAT_WIDTHS_TO_FULL = 20;
@@ -115,13 +122,33 @@ function createOwnedTexture(
   });
 }
 
+function getImageSourceDimensions(
+  src: HTMLImageElement | HTMLCanvasElement,
+  fallbackW: number,
+  fallbackH: number,
+): { width: number; height: number } {
+  if (src instanceof HTMLImageElement) {
+    return {
+      width: src.naturalWidth || fallbackW,
+      height: src.naturalHeight || fallbackH,
+    };
+  }
+  return {
+    width: src.width || fallbackW,
+    height: src.height || fallbackH,
+  };
+}
+
 function buildHitMask(
-  img: HTMLImageElement,
+  src: HTMLImageElement | HTMLCanvasElement,
   fallbackW: number,
   fallbackH: number,
 ): HitMask | null {
-  const natW = img.naturalWidth || fallbackW;
-  const natH = img.naturalHeight || fallbackH;
+  const { width: natW, height: natH } = getImageSourceDimensions(
+    src,
+    fallbackW,
+    fallbackH,
+  );
   const scale = Math.min(1, 256 / Math.max(natW, natH));
   const width = Math.max(1, Math.round(natW * scale));
   const height = Math.max(1, Math.round(natH * scale));
@@ -133,7 +160,7 @@ function buildHitMask(
   if (!ctx) return null;
 
   ctx.clearRect(0, 0, width, height);
-  ctx.drawImage(img, 0, 0, width, height);
+  ctx.drawImage(src, 0, 0, width, height);
   try {
     const imageData = ctx.getImageData(0, 0, width, height);
     const data = imageData.data;
@@ -219,15 +246,15 @@ function blurAlphaBuffer(
  * Chrome, Safari iOS and Firefox without per-frame BlurFilter overhead.
  */
 function createSilhouetteShadowTexture(
-  img: HTMLImageElement,
+  src: HTMLImageElement | HTMLCanvasElement,
   maxContentDim: number,
   blurRadiusPx: number,
   padPx: number,
   rgb: readonly [number, number, number],
   extendBottomEdge = false,
+  blurPasses = 3,
 ): ShadowTextureInfo {
-  const natW = img.naturalWidth || 512;
-  const natH = img.naturalHeight || 512;
+  const { width: natW, height: natH } = getImageSourceDimensions(src, 512, 512);
   const scale = Math.min(1, maxContentDim / Math.max(natW, natH));
   const contentW = Math.max(1, Math.round(natW * scale));
   const contentH = Math.max(1, Math.round(natH * scale));
@@ -241,7 +268,7 @@ function createSilhouetteShadowTexture(
 
   if (ctx) {
     ctx.clearRect(0, 0, canvasW, canvasH);
-    ctx.drawImage(img, padPx, padPx, contentW, contentH);
+    ctx.drawImage(src, padPx, padPx, contentW, contentH);
     const imageData = ctx.getImageData(0, 0, canvasW, canvasH);
     const pixels = imageData.data;
     const alphaBuf = new Float32Array(canvasW * canvasH);
@@ -261,7 +288,13 @@ function createSilhouetteShadowTexture(
       }
     }
 
-    const blurred = blurAlphaBuffer(alphaBuf, canvasW, canvasH, blurRadiusPx, 3);
+    const blurred = blurAlphaBuffer(
+      alphaBuf,
+      canvasW,
+      canvasH,
+      blurRadiusPx,
+      blurPasses,
+    );
     const [r, g, b] = rgb;
     for (let i = 0; i < blurred.length; i++) {
       const a = Math.min(255, Math.max(0, Math.round(blurred[i])));
@@ -438,7 +471,8 @@ export function PetStage({ imageUrl, bgUrl, catName }: PetStageProps) {
     let bgTexture: Texture | null = null;
     let bgVignetteTexture: Texture | null = null;
     let catTexture: Texture | null = null;
-    let catShadowTexture: Texture | null = null;
+    let catAoShadowTexture: Texture | null = null;
+    let catSoftShadowTexture: Texture | null = null;
     let armTexture: Texture | null = null;
     let armShadowTightTexture: Texture | null = null;
     let armShadowLiftedTexture: Texture | null = null;
@@ -490,7 +524,8 @@ export function PetStage({ imageUrl, bgUrl, catName }: PetStageProps) {
         bgTexture?.destroy(true);
         bgVignetteTexture?.destroy(true);
         catTexture?.destroy(true);
-        catShadowTexture?.destroy(true);
+        catAoShadowTexture?.destroy(true);
+        catSoftShadowTexture?.destroy(true);
         armTexture?.destroy(true);
         armShadowTightTexture?.destroy(true);
         armShadowLiftedTexture?.destroy(true);
@@ -502,7 +537,8 @@ export function PetStage({ imageUrl, bgUrl, catName }: PetStageProps) {
         bgTexture = null;
         bgVignetteTexture = null;
         catTexture = null;
-        catShadowTexture = null;
+        catAoShadowTexture = null;
+        catSoftShadowTexture = null;
         armTexture = null;
         armShadowTightTexture = null;
         armShadowLiftedTexture = null;
@@ -553,13 +589,19 @@ export function PetStage({ imageUrl, bgUrl, catName }: PetStageProps) {
         return;
       }
 
-      const hitMask = buildHitMask(catImg, 1536, 1536);
+      // Clean light cut-out fringes at runtime (erode ~1.5 px, feather ~1 px, decontaminate edge RGB)
+      const cleanedCatCanvas = cleanCutoutEdges(catImg, {
+        erodePx: 1.5,
+        featherPx: 1.0,
+      });
+
+      const hitMask = buildHitMask(cleanedCatCanvas, 1536, 1536);
 
       bgTexture = createOwnedTexture(bgImg);
       bgVignetteTexture = createOwnedTexture(
         createVignetteCanvas(512, 0.5, 0.5, 0.14),
       );
-      catTexture = createOwnedTexture(catImg);
+      catTexture = createOwnedTexture(cleanedCatCanvas);
       armTexture = createOwnedTexture(armImg);
       brushTexture = createOwnedTexture(createSoftBrushCanvas(64));
       warmLightTexture = createOwnedTexture(createSharedWarmLightCanvas(512));
@@ -567,37 +609,52 @@ export function PetStage({ imageUrl, bgUrl, catName }: PetStageProps) {
         createVignetteCanvas(512, 0.46, 0.47, 0.24),
       );
 
-      // Build blurred silhouette shadows from the cat and arm alpha channels
-      // Cat shadow: ~18 px visual blur on screen (~8 px 3-pass radius on 420 px canvas)
-      const catShadowInfo = createSilhouetteShadowTexture(
-        catImg,
-        420,
-        8,
-        40,
-        [28, 18, 11],
+      // Build two-layer cat contact shadows from cleaned cat alpha (falling down-right)
+      // 1) Wide soft cast shadow: blur ~26 px, offset ~10 px down-right, ~30% opacity
+      const catSoftShadowInfo = createSilhouetteShadowTexture(
+        cleanedCatCanvas,
+        440,
+        10,
+        56,
+        [16, 10, 6],
         false,
+        3,
       );
-      catShadowTexture = catShadowInfo.texture;
+      catSoftShadowTexture = catSoftShadowInfo.texture;
 
-      // Arm tight shadow (pressing): ~8 px visual blur on screen
-      const armTightShadowInfo = createSilhouetteShadowTexture(
-        armImg,
+      // 2) Tight ambient-occlusion contact shadow: blur ~4 px, offset ~2 px down-right, ~45% darkness
+      const catAoShadowInfo = createSilhouetteShadowTexture(
+        cleanedCatCanvas,
         512,
         2,
         16,
-        [26, 17, 10],
+        [16, 10, 6],
+        false,
+        2,
+      );
+      catAoShadowTexture = catAoShadowInfo.texture;
+
+      // Arm tight shadow (pressing on cat): offset ~10 px, blur ~10 px, ~40%
+      const armTightShadowInfo = createSilhouetteShadowTexture(
+        armImg,
+        512,
+        3,
+        20,
+        [14, 9, 5],
         true,
+        2,
       );
       armShadowTightTexture = armTightShadowInfo.texture;
 
-      // Arm lifted shadow (hovering off cat): ~20 px visual blur on screen
+      // Arm lifted shadow (hovering off cat): offset ~26 px, blur ~24 px, ~28%
       const armLiftedShadowInfo = createSilhouetteShadowTexture(
         armImg,
         512,
-        6,
-        36,
-        [26, 17, 10],
+        7,
+        44,
+        [14, 9, 5],
         true,
+        3,
       );
       armShadowLiftedTexture = armLiftedShadowInfo.texture;
 
@@ -648,12 +705,18 @@ export function PetStage({ imageUrl, bgUrl, catName }: PetStageProps) {
       bgVignetteSprite.blendMode = 'multiply';
       app.stage.addChild(bgVignetteSprite);
 
-      // === Layer (b): Cat contact shadow (from cat alpha, multiply, ~35% opacity) ===
-      const catShadowSprite = new Sprite(catShadowTexture);
-      catShadowSprite.anchor.set(0.5);
-      catShadowSprite.blendMode = 'multiply';
-      catShadowSprite.alpha = CAT_SHADOW_OPACITY;
-      app.stage.addChild(catShadowSprite);
+      // === Layer (b): Two-layer cat contact shadow (wide soft cast + tight AO) ===
+      const catSoftShadowSprite = new Sprite(catSoftShadowTexture);
+      catSoftShadowSprite.anchor.set(0.5);
+      catSoftShadowSprite.blendMode = 'multiply';
+      catSoftShadowSprite.alpha = CAT_SOFT_SHADOW_OPACITY;
+      app.stage.addChild(catSoftShadowSprite);
+
+      const catAoShadowSprite = new Sprite(catAoShadowTexture);
+      catAoShadowSprite.anchor.set(0.5);
+      catAoShadowSprite.blendMode = 'multiply';
+      catAoShadowSprite.alpha = CAT_AO_SHADOW_OPACITY;
+      app.stage.addChild(catAoShadowSprite);
 
       // === Layer (c): Cat photo with fur displacement ===
       const catContainer = new Container();
@@ -709,9 +772,10 @@ export function PetStage({ imageUrl, bgUrl, catName }: PetStageProps) {
       armShadowTightSprite.alpha = 0;
       app.stage.addChild(armShadowTightSprite);
 
-      // === Layer (e): Arm photo anchored at fingertip contact point ===
+      // === Layer (e): Arm photo anchored at fingertip contact point (warm-graded to match sunny scene) ===
       const armSprite = new Sprite(armTexture);
       armSprite.anchor.set(ARM_FINGERTIP_U, ARM_FINGERTIP_V);
+      armSprite.tint = ARM_WARM_TINT;
       armSprite.visible = false;
       armSprite.alpha = 0;
       app.stage.addChild(armSprite);
@@ -736,10 +800,12 @@ export function PetStage({ imageUrl, bgUrl, catName }: PetStageProps) {
       let catCenterX = stageW / 2;
       let catCenterY = stageH / 2;
       let armBaseScale = 0.3;
-      const catShadowScaleRatioX = catTexture.width / catShadowInfo.contentW;
-      const catShadowScaleRatioY = catTexture.height / catShadowInfo.contentH;
-      const visWFrac = hitMask?.visibleWidthFrac ?? 0.77;
-      const visHFrac = hitMask?.visibleHeightFrac ?? 0.77;
+      const catSoftScaleRatioX = catTexture.width / catSoftShadowInfo.contentW;
+      const catSoftScaleRatioY = catTexture.height / catSoftShadowInfo.contentH;
+      const catAoScaleRatioX = catTexture.width / catAoShadowInfo.contentW;
+      const catAoScaleRatioY = catTexture.height / catAoShadowInfo.contentH;
+      const visWFrac = hitMask?.visibleWidthFrac ?? 0.76;
+      const visHFrac = hitMask?.visibleHeightFrac ?? 0.76;
 
       const updateFilterScale = () => {
         if (!displacementFilter) return;
@@ -768,16 +834,21 @@ export function PetStage({ imageUrl, bgUrl, catName }: PetStageProps) {
         sceneVignetteSprite.width = stageW;
         sceneVignetteSprite.height = stageH;
 
-        // Size visible cat comfortably on the blanket with balanced margins
-        const maxVisW = stageW * 0.8;
-        const maxVisH = stageH * 0.58;
-        const targetTexW = maxVisW / visWFrac;
-        const targetTexH = maxVisH / visHFrac;
-        catBaseScale = Math.min(
-          targetTexW / catTexture!.width,
-          targetTexH / catTexture!.height,
-        );
-        catVisibleW = catTexture!.width * catBaseScale * visWFrac;
+        // Size cat: longest visible side ~62% of shorter stage dim on wide screens,
+        // and ~88% of width on phones (clamped vertically so tall cats stay clear of HUD)
+        const visTexW = catTexture!.width * visWFrac;
+        const visTexH = catTexture!.height * visHFrac;
+        const visTexLongest = Math.max(visTexW, visTexH);
+        if (stageW >= stageH) {
+          const targetLongest = Math.min(stageW, stageH) * 0.62;
+          catBaseScale = targetLongest / visTexLongest;
+        } else {
+          const scaleByW = (stageW * 0.88) / visTexW;
+          const scaleByH = (stageH * 0.62) / visTexH;
+          catBaseScale = Math.min(scaleByW, scaleByH);
+        }
+        catVisibleW = visTexW * catBaseScale;
+        const catVisibleLongest = visTexLongest * catBaseScale;
 
         catCenterX = stageW / 2;
         catCenterY = stageH * 0.5;
@@ -785,17 +856,26 @@ export function PetStage({ imageUrl, bgUrl, catName }: PetStageProps) {
         catContainer.position.set(catCenterX, catCenterY);
         catContainer.scale.set(catBaseScale);
 
-        catShadowSprite.position.set(
-          catCenterX + CAT_SHADOW_OFFSET,
-          catCenterY + CAT_SHADOW_OFFSET,
+        catSoftShadowSprite.position.set(
+          catCenterX + CAT_SOFT_SHADOW_OFFSET,
+          catCenterY + CAT_SOFT_SHADOW_OFFSET,
         );
-        catShadowSprite.scale.set(
-          catBaseScale * catShadowScaleRatioX,
-          catBaseScale * catShadowScaleRatioY,
+        catSoftShadowSprite.scale.set(
+          catBaseScale * catSoftScaleRatioX,
+          catBaseScale * catSoftScaleRatioY,
         );
 
-        // Natural human hand proportion (~43% of curled cat diameter across palm+thumb)
-        const desiredPalmW = clamp(catVisibleW * 0.43, 132, 212);
+        catAoShadowSprite.position.set(
+          catCenterX + CAT_AO_SHADOW_OFFSET,
+          catCenterY + CAT_AO_SHADOW_OFFSET,
+        );
+        catAoShadowSprite.scale.set(
+          catBaseScale * catAoScaleRatioX,
+          catBaseScale * catAoScaleRatioY,
+        );
+
+        // Scale arm proportionally to the cat (~43% of cat longest side across palm+thumb)
+        const desiredPalmW = catVisibleLongest * 0.43;
         armBaseScale =
           desiredPalmW / (armTexture!.width * ARM_PALM_WIDTH_RATIO);
 
@@ -1452,14 +1532,23 @@ export function PetStage({ imageUrl, bgUrl, catName }: PetStageProps) {
         );
         catContainer.rotation = 0;
 
-        // Cat contact shadow shares breathing, melt, and flinch with the cat
-        catShadowSprite.position.set(
-          catCenterX + CAT_SHADOW_OFFSET + flinchX,
-          catCenterY + CAT_SHADOW_OFFSET + flinchY,
+        // Two-layer cat shadows share breathing, melt, and flinch with the cat
+        catSoftShadowSprite.position.set(
+          catCenterX + CAT_SOFT_SHADOW_OFFSET + flinchX,
+          catCenterY + CAT_SOFT_SHADOW_OFFSET + flinchY,
         );
-        catShadowSprite.scale.set(
-          catBaseScale * catShadowScaleRatioX * reactScaleX,
-          catBaseScale * catShadowScaleRatioY * reactScaleY,
+        catSoftShadowSprite.scale.set(
+          catBaseScale * catSoftScaleRatioX * reactScaleX,
+          catBaseScale * catSoftScaleRatioY * reactScaleY,
+        );
+
+        catAoShadowSprite.position.set(
+          catCenterX + CAT_AO_SHADOW_OFFSET + flinchX,
+          catCenterY + CAT_AO_SHADOW_OFFSET + flinchY,
+        );
+        catAoShadowSprite.scale.set(
+          catBaseScale * catAoScaleRatioX * reactScaleX,
+          catBaseScale * catAoScaleRatioY * reactScaleY,
         );
 
         // === Arm position, bottom-right edge anchoring, lift/press & shadow ===
@@ -1471,11 +1560,16 @@ export function PetStage({ imageUrl, bgUrl, catName }: PetStageProps) {
         const rotLerp = 1 - Math.exp(-dt / 0.11); // slight natural rotational lag while stroking
         armRot += (targetArmRot - armRot) * rotLerp;
 
-        // Hand lowers onto the cat when over it, lifts when hovering off the cat (or during nip)
+        // Animate lift/press shadow & arm height cleanly over ~150 ms
         const onCatReady = handWanted && isOverCat && nipCooldown <= 0;
         const desiredLift = onCatReady ? 0 : 1;
-        const liftLerp = 1 - Math.exp(-dt / 0.11);
-        liftAmount += (desiredLift - liftAmount) * liftLerp;
+        const liftStep = wallDt / ARM_LIFT_TRANSITION_SEC;
+        if (desiredLift > liftAmount) {
+          liftAmount = Math.min(1, liftAmount + liftStep);
+        } else if (desiredLift < liftAmount) {
+          liftAmount = Math.max(0, liftAmount - liftStep);
+        }
+        const liftEased = liftAmount * liftAmount * (3 - 2 * liftAmount);
 
         // Subtle press (scaleY -3%) while actively stroking on the cat
         const activelyStroking =
@@ -1503,7 +1597,7 @@ export function PetStage({ imageUrl, bgUrl, catName }: PetStageProps) {
           const sleeveLenTex = (1 - ARM_FINGERTIP_V) * armTexture!.height;
           const sleeveHalfWTex = ARM_SLEEVE_HALF_WIDTH_RATIO * armTexture!.width;
           const pressScaleY = 1 - 0.03 * pressAmount;
-          const liftScale = 1 + 0.03 * liftAmount;
+          const liftScale = 1 + 0.03 * liftEased;
           const minDropPerUnitScale =
             sleeveLenTex * pressScaleY * cosR - sleeveHalfWTex * sinAbs;
           const minScaleForEdge =
@@ -1521,14 +1615,14 @@ export function PetStage({ imageUrl, bgUrl, catName }: PetStageProps) {
 
           const shadowOffset =
             ARM_SHADOW_TIGHT_OFFSET +
-            liftAmount * (ARM_SHADOW_LIFTED_OFFSET - ARM_SHADOW_TIGHT_OFFSET);
+            liftEased * (ARM_SHADOW_LIFTED_OFFSET - ARM_SHADOW_TIGHT_OFFSET);
           const shadowX = handX + shadowOffset;
           const shadowY = handY + shadowOffset;
 
           const tightAlpha =
-            handAlpha * ARM_SHADOW_TIGHT_OPACITY * (1 - liftAmount);
+            handAlpha * ARM_SHADOW_TIGHT_OPACITY * (1 - liftEased);
           const liftedAlpha =
-            handAlpha * ARM_SHADOW_LIFTED_OPACITY * liftAmount;
+            handAlpha * ARM_SHADOW_LIFTED_OPACITY * liftEased;
 
           armShadowTightSprite.visible = tightAlpha > 0.005;
           armShadowTightSprite.alpha = tightAlpha;
