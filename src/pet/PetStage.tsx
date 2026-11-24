@@ -51,12 +51,14 @@ const CAT_AO_SHADOW_OFFSET = 2;
 const CAT_AO_SHADOW_OPACITY = 0.45;
 const CAT_SOFT_SHADOW_OFFSET = 10;
 const CAT_SOFT_SHADOW_OPACITY = 0.3;
-const ARM_SHADOW_TIGHT_OFFSET_X = 14;
-const ARM_SHADOW_TIGHT_OFFSET_Y = 6;
-const ARM_SHADOW_TIGHT_OPACITY = 0.4;
-const ARM_SHADOW_LIFTED_OFFSET_X = 30;
-const ARM_SHADOW_LIFTED_OFFSET_Y = 14;
-const ARM_SHADOW_LIFTED_OPACITY = 0.28;
+const ARM_SHADOW_TIGHT_OFFSET_X = 12;
+const ARM_SHADOW_TIGHT_OFFSET_Y = 5;
+const ARM_SHADOW_TIGHT_OPACITY = 0.55;
+const ARM_SHADOW_TIGHT_BLUR_SCREEN_PX = 6;
+const ARM_SHADOW_LIFTED_OFFSET_X = 40;
+const ARM_SHADOW_LIFTED_OFFSET_Y = 18;
+const ARM_SHADOW_LIFTED_OPACITY = 0.5;
+const ARM_SHADOW_LIFTED_BLUR_SCREEN_PX = 18;
 const ARM_LIFT_TRANSITION_SEC = 0.15;
 
 // Purr meter pacing: steady petting ~25-30 s to 100%, idle drain 1%/s after 2 s idle
@@ -194,21 +196,41 @@ function buildHitMask(
   }
 }
 
-function blurAlphaBuffer(
+function computeBoxRadiiForSigma(sigma: number, passes = 3): number[] {
+  if (sigma <= 0.35 || passes <= 0) return [];
+  const wIdeal = Math.sqrt((12 * sigma * sigma) / passes + 1);
+  let wl = Math.floor(wIdeal);
+  if (wl % 2 === 0) wl--;
+  wl = Math.max(1, wl);
+  const wu = wl + 2;
+  const mIdeal =
+    (12 * sigma * sigma - passes * wl * wl - 4 * passes * wl - 3 * passes) /
+    (-4 * wl - 4);
+  const m = clamp(Math.round(mIdeal), 0, passes);
+  const radii: number[] = [];
+  for (let i = 0; i < passes; i++) {
+    const w = i < m ? wl : wu;
+    const r = (w - 1) / 2;
+    if (r > 0) radii.push(r);
+  }
+  return radii;
+}
+
+function blurAlphaBufferWithRadii(
   src: Float32Array,
   width: number,
   height: number,
-  radius: number,
-  passes = 3,
+  radii: readonly number[],
 ): Float32Array {
-  if (radius <= 0) return src;
-  const r = Math.max(1, Math.round(radius));
-  const win = 2 * r + 1;
-  const invWin = 1 / win;
+  if (radii.length === 0) return src;
   const a = src;
   const b = new Float32Array(width * height);
 
-  for (let pass = 0; pass < passes; pass++) {
+  for (let pass = 0; pass < radii.length; pass++) {
+    const r = Math.max(1, Math.round(radii[pass]));
+    const win = 2 * r + 1;
+    const invWin = 1 / win;
+
     // Horizontal running-sum pass: a -> b
     for (let y = 0; y < height; y++) {
       const row = y * width;
@@ -242,6 +264,20 @@ function blurAlphaBuffer(
   return a;
 }
 
+function blurAlphaBuffer(
+  src: Float32Array,
+  width: number,
+  height: number,
+  radius: number,
+  passes = 3,
+): Float32Array {
+  if (radius <= 0) return src;
+  const r = Math.max(1, Math.round(radius));
+  const radii: number[] = [];
+  for (let i = 0; i < passes; i++) radii.push(r);
+  return blurAlphaBufferWithRadii(src, width, height, radii);
+}
+
 /**
  * Builds a blurred warm-dark silhouette texture from an image's alpha channel.
  * Using a separable 3-pass box blur ensures identical soft Gaussian edges across
@@ -255,6 +291,7 @@ function createSilhouetteShadowTexture(
   rgb: readonly [number, number, number],
   extendBottomEdge = false,
   blurPasses = 3,
+  exactSigmaTex?: number,
 ): ShadowTextureInfo {
   const { width: natW, height: natH } = getImageSourceDimensions(src, 512, 512);
   const scale = Math.min(1, maxContentDim / Math.max(natW, natH));
@@ -290,13 +327,15 @@ function createSilhouetteShadowTexture(
       }
     }
 
-    const blurred = blurAlphaBuffer(
-      alphaBuf,
-      canvasW,
-      canvasH,
-      blurRadiusPx,
-      blurPasses,
-    );
+    const blurred =
+      exactSigmaTex !== undefined
+        ? blurAlphaBufferWithRadii(
+            alphaBuf,
+            canvasW,
+            canvasH,
+            computeBoxRadiiForSigma(exactSigmaTex, 3),
+          )
+        : blurAlphaBuffer(alphaBuf, canvasW, canvasH, blurRadiusPx, blurPasses);
     const [r, g, b] = rgb;
     for (let i = 0; i < blurred.length; i++) {
       const a = Math.min(255, Math.max(0, Math.round(blurred[i])));
@@ -636,27 +675,57 @@ export function PetStage({ imageUrl, bgUrl, catName }: PetStageProps) {
       );
       catAoShadowTexture = catAoShadowInfo.texture;
 
-      // Arm tight shadow (pressing on cat): offset (+14, +6) px, blur ~10 px, ~40%
-      const armTightShadowInfo = createSilhouetteShadowTexture(
-        armImg,
-        512,
-        2,
-        20,
-        [14, 9, 5],
-        true,
-        3,
+      // Arm shadows are built at the arm's display scale so blur radii match screen pixels
+      const buildArmShadow = (
+        blurScreenPx: number,
+        armDisplayH: number,
+      ): ShadowTextureInfo => {
+        const targetContentH = clamp(Math.round(armDisplayH), 480, 1024);
+        const texPxPerScreenPx = targetContentH / Math.max(1, armDisplayH);
+        // CSS shadow blur radius convention: Gaussian sigma = blurScreenPx / 2
+        const sigmaTex = (blurScreenPx * 0.5) * texPxPerScreenPx;
+        const padPx = Math.max(8, Math.ceil(sigmaTex * 3.5) + 4);
+        return createSilhouetteShadowTexture(
+          armImg,
+          targetContentH,
+          0,
+          padPx,
+          [14, 9, 5],
+          true,
+          3,
+          sigmaTex,
+        );
+      };
+
+      const visWFrac = hitMask?.visibleWidthFrac ?? 0.76;
+      const visHFrac = hitMask?.visibleHeightFrac ?? 0.76;
+
+      const computeArmBaseScaleForViewport = (w: number, h: number): number => {
+        const visTexW = catTexture!.width * visWFrac;
+        const visTexH = catTexture!.height * visHFrac;
+        const visTexLongest = Math.max(visTexW, visTexH);
+        let catScale: number;
+        if (w >= h) {
+          catScale = (Math.min(w, h) * 0.62) / visTexLongest;
+        } else {
+          catScale = Math.min((w * 0.88) / visTexW, (h * 0.62) / visTexH);
+        }
+        const catVisLongest = visTexLongest * catScale;
+        const desiredPalmW = catVisLongest * 0.43;
+        return desiredPalmW / (armTexture!.width * ARM_PALM_WIDTH_RATIO);
+      };
+
+      let bakedArmDisplayH =
+        armTexture.height * computeArmBaseScaleForViewport(initialW, initialH);
+      let armTightShadowInfo = buildArmShadow(
+        ARM_SHADOW_TIGHT_BLUR_SCREEN_PX,
+        bakedArmDisplayH,
       );
       armShadowTightTexture = armTightShadowInfo.texture;
 
-      // Arm lifted shadow (hovering off cat): offset (+30, +14) px, blur ~24 px, ~28%
-      const armLiftedShadowInfo = createSilhouetteShadowTexture(
-        armImg,
-        512,
-        5,
-        36,
-        [14, 9, 5],
-        true,
-        3,
+      let armLiftedShadowInfo = buildArmShadow(
+        ARM_SHADOW_LIFTED_BLUR_SCREEN_PX,
+        bakedArmDisplayH,
       );
       armShadowLiftedTexture = armLiftedShadowInfo.texture;
 
@@ -742,37 +811,46 @@ export function PetStage({ imageUrl, bgUrl, catName }: PetStageProps) {
       catSprite.filters = [displacementFilter];
 
       // === Layer (d): Arm shadows (tight when pressing on cat, lifted when hovering off) ===
-      const armTightAnchorX =
-        (armTightShadowInfo.padPx + ARM_FINGERTIP_U * armTightShadowInfo.contentW) /
-        armTightShadowInfo.canvasW;
-      const armTightAnchorY =
-        (armTightShadowInfo.padPx + ARM_FINGERTIP_V * armTightShadowInfo.contentH) /
-        armTightShadowInfo.canvasH;
-      const armTightScaleRatioX = armTexture.width / armTightShadowInfo.contentW;
-      const armTightScaleRatioY = armTexture.height / armTightShadowInfo.contentH;
-
-      const armLiftedAnchorX =
-        (armLiftedShadowInfo.padPx + ARM_FINGERTIP_U * armLiftedShadowInfo.contentW) /
-        armLiftedShadowInfo.canvasW;
-      const armLiftedAnchorY =
-        (armLiftedShadowInfo.padPx + ARM_FINGERTIP_V * armLiftedShadowInfo.contentH) /
-        armLiftedShadowInfo.canvasH;
-      const armLiftedScaleRatioX = armTexture.width / armLiftedShadowInfo.contentW;
-      const armLiftedScaleRatioY = armTexture.height / armLiftedShadowInfo.contentH;
+      let armTightScaleRatioX = armTexture.width / armTightShadowInfo.contentW;
+      let armTightScaleRatioY = armTexture.height / armTightShadowInfo.contentH;
+      let armLiftedScaleRatioX = armTexture.width / armLiftedShadowInfo.contentW;
+      let armLiftedScaleRatioY = armTexture.height / armLiftedShadowInfo.contentH;
 
       const armShadowLiftedSprite = new Sprite(armShadowLiftedTexture);
-      armShadowLiftedSprite.anchor.set(armLiftedAnchorX, armLiftedAnchorY);
       armShadowLiftedSprite.blendMode = 'multiply';
       armShadowLiftedSprite.visible = false;
       armShadowLiftedSprite.alpha = 0;
       app.stage.addChild(armShadowLiftedSprite);
 
       const armShadowTightSprite = new Sprite(armShadowTightTexture);
-      armShadowTightSprite.anchor.set(armTightAnchorX, armTightAnchorY);
       armShadowTightSprite.blendMode = 'multiply';
       armShadowTightSprite.visible = false;
       armShadowTightSprite.alpha = 0;
       app.stage.addChild(armShadowTightSprite);
+
+      const syncArmShadowSprites = () => {
+        armTightScaleRatioX = armTexture!.width / armTightShadowInfo.contentW;
+        armTightScaleRatioY = armTexture!.height / armTightShadowInfo.contentH;
+        armLiftedScaleRatioX = armTexture!.width / armLiftedShadowInfo.contentW;
+        armLiftedScaleRatioY = armTexture!.height / armLiftedShadowInfo.contentH;
+
+        armShadowTightSprite.texture = armTightShadowInfo.texture;
+        armShadowTightSprite.anchor.set(
+          (armTightShadowInfo.padPx + ARM_FINGERTIP_U * armTightShadowInfo.contentW) /
+            armTightShadowInfo.canvasW,
+          (armTightShadowInfo.padPx + ARM_FINGERTIP_V * armTightShadowInfo.contentH) /
+            armTightShadowInfo.canvasH,
+        );
+
+        armShadowLiftedSprite.texture = armLiftedShadowInfo.texture;
+        armShadowLiftedSprite.anchor.set(
+          (armLiftedShadowInfo.padPx + ARM_FINGERTIP_U * armLiftedShadowInfo.contentW) /
+            armLiftedShadowInfo.canvasW,
+          (armLiftedShadowInfo.padPx + ARM_FINGERTIP_V * armLiftedShadowInfo.contentH) /
+            armLiftedShadowInfo.canvasH,
+        );
+      };
+      syncArmShadowSprites();
 
       // === Layer (e): Arm photo anchored at fingertip contact point (warm-graded to match sunny scene) ===
       const armSprite = new Sprite(armTexture);
@@ -806,8 +884,6 @@ export function PetStage({ imageUrl, bgUrl, catName }: PetStageProps) {
       const catSoftScaleRatioY = catTexture.height / catSoftShadowInfo.contentH;
       const catAoScaleRatioX = catTexture.width / catAoShadowInfo.contentW;
       const catAoScaleRatioY = catTexture.height / catAoShadowInfo.contentH;
-      const visWFrac = hitMask?.visibleWidthFrac ?? 0.76;
-      const visHFrac = hitMask?.visibleHeightFrac ?? 0.76;
 
       const updateFilterScale = () => {
         if (!displacementFilter) return;
@@ -880,6 +956,27 @@ export function PetStage({ imageUrl, bgUrl, catName }: PetStageProps) {
         const desiredPalmW = catVisibleLongest * 0.43;
         armBaseScale =
           desiredPalmW / (armTexture!.width * ARM_PALM_WIDTH_RATIO);
+
+        // Rebuild arm shadow textures if display scale changed meaningfully on resize
+        const armDisplayH = armTexture!.height * armBaseScale;
+        if (Math.abs(armDisplayH - bakedArmDisplayH) / Math.max(1, bakedArmDisplayH) > 0.15) {
+          const oldTight = armShadowTightTexture;
+          const oldLifted = armShadowLiftedTexture;
+          bakedArmDisplayH = armDisplayH;
+          armTightShadowInfo = buildArmShadow(
+            ARM_SHADOW_TIGHT_BLUR_SCREEN_PX,
+            bakedArmDisplayH,
+          );
+          armLiftedShadowInfo = buildArmShadow(
+            ARM_SHADOW_LIFTED_BLUR_SCREEN_PX,
+            bakedArmDisplayH,
+          );
+          armShadowTightTexture = armTightShadowInfo.texture;
+          armShadowLiftedTexture = armLiftedShadowInfo.texture;
+          syncArmShadowSprites();
+          oldTight?.destroy(true);
+          oldLifted?.destroy(true);
+        }
 
         updateFilterScale();
       };
