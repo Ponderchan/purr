@@ -53,8 +53,8 @@ reports (id uuid pk, cat_id uuid, reporter_id uuid, reason text, created_at time
 blocks  (user_id uuid, cat_id uuid, pk(user_id, cat_id))
 ```
 
-- Pets are batched client-side (send every 5 s or on page hide), incremented through an RPC `add_pets(cat_id, n)` that caps n per call and rate-limits per anonymous user.
-- Country comes from the `cf-ipcountry` header via an edge function; never store IP or precise location.
+- Pets are batched client-side (send every 5 s or on page hide) to a Cloudflare Pages Function `POST /api/pets`. It reads the country from `request.cf.country`, rate-limits, and calls the Supabase RPC `add_pets(cat_id, n, country)` with the service-role key. The RPC caps n per call and is not callable by anon/authenticated roles.
+- Never store IP addresses or precise location; country code only.
 - Strip EXIF (incl. GPS) from uploads client-side before upload.
 - RLS on every table.
 
