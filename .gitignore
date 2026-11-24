@@ -6,3 +6,6 @@ dist/
 .DS_Store
 test-photos/
 .wrangler/
+src/assets/photo/*.png
+src/assets/photo/*.jpg
+src/assets/photo/*.jpeg

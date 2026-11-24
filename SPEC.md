@@ -72,12 +72,17 @@ Every cat view has a **Report** and **Hide this cat** action.
 
 ## 5. Petting feel (the core — get this right first)
 
-- Cut-out cat sprite on a soft, original background (our own art).
-- A stylised hand follows the pointer with slight lag and tilt; hidden when the pointer leaves.
-- Fur ripple: displacement map stamped along the stroke path, decaying over ~400 ms; strength ∝ stroke speed, clamped.
-- Purr: starts after ~0.5 s of continuous petting, volume eases in/out; first sound only after a user gesture (autoplay rules). Mute toggle, remembered in localStorage.
-- Purr meter: fills with stroke distance on the cat mask only (strokes off the cat don't count).
-- Reactions are small sprite/transform animations, not new art per cat (squash, tail-region wobble, slight rotation).
+- Immersive full-bleed stage (`100dvh`) on `/<slug>` with no card borders: transparent top bar overlay, small cat name label, translucent top-right mute circle, and a slim safe-area-aware translucent purr meter pill near the bottom. The PixiJS stage is lazy-loaded only on the cat page behind a same-size background photo placeholder; if WebGL init fails, static background + cat photos are shown with a gentle fallback notice.
+- Six photorealistic PixiJS layers (bottom to top):
+  1. **Background photo**: cover-fit top-down blanket photo with a very subtle vignette.
+  2. **Cat contact shadow**: blurred (~18 px) silhouette built from the cat's alpha, offset 6 px down-right, multiply-blended at ~35% opacity so the cat sits naturally on the blanket.
+  3. **Cat photo + fur displacement**: cut-out cat photo with a RenderTexture `dispMap` (8–14 px scale, soft brush stretched along the stroke direction, ~500 ms decay) so fur yields and settles along the stroke without watery wobble.
+  4. **Arm shadow**: blurred silhouette built from the arm's alpha; tight when pressing on the cat (~6 px offset, ~8 px blur, 35% opacity) and lifted when hovering off the cat (~22 px offset, ~20 px blur, 20% opacity).
+  5. **Edge-anchored arm photo**: real forearm + hand photo whose measured fingertip point tracks the smoothed pointer while the sleeve rotates toward a fixed off-screen bottom-right pivot (`x = 75% width, y = 120% height`) and scales to always extend past the screen edge; lifts (+3% scale) off the cat, adds a subtle `scaleY −3%` press with slight rotational lag while stroking, and hides when the pointer leaves.
+  6. **Shared light**: one full-stage overlay (warm soft left-side sunlight gradient using `screen` at low alpha + gentle darker vignette) so blanket, cat and arm share the same lighting.
+- Purr: synthesised with Web Audio, starts after ~0.5 s of continuous petting, volume eases in/out; first sound only after a user gesture (autoplay rules). Mute toggle, remembered in localStorage.
+- Purr meter: fills with stroke distance on the cat alpha mask only (strokes off the cat don't count); steady petting takes ~25–30 s to reach 100%, with idle drain at ~1%/s starting after 2 s idle.
+- Realistic cat life only (no cartoon squash/wiggle): continuous slow breathing (scale 1.000–1.012 at ~0.4 Hz on both cat and shadow) that slows and deepens as the purr meter rises, a subtle "melt" at 100% (`scaleX +1.5%`, `scaleY −1%`, eased over 1.5 s), and a quick small flinch (2–3 px jitter, 200 ms + 1 s cooldown) on sustained over-petting.
 
 ## 6. Milestones (each = one Gemini task, reviewed by Claude)
 

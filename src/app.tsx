@@ -1,6 +1,37 @@
-import { LocationProvider, Route, Router } from 'preact-iso';
-import sampleCatUrl from './assets/sample-cat.svg';
-import { PetStage } from './pet/PetStage';
+import type { ComponentType } from 'preact';
+import { useEffect, useState } from 'preact/hooks';
+import { LocationProvider, Route, Router, useLocation } from 'preact-iso';
+import bgPhotoUrl from './assets/photo/bg.webp';
+import sampleCatUrl from './assets/photo/sample-cat.webp';
+import type { PetStageProps } from './pet/PetStage';
+
+const STATIC_ROUTES = new Set([
+  '/',
+  '/new',
+  '/me',
+  '/about',
+  '/privacy',
+  '/terms',
+]);
+
+function isCatRoute(path: string): boolean {
+  const normalized = path.length > 1 && path.endsWith('/') ? path.slice(0, -1) : path;
+  if (STATIC_ROUTES.has(normalized)) return false;
+  const segments = normalized.split('/').filter(Boolean);
+  return segments.length === 1;
+}
+
+function formatCatName(slug?: string): string {
+  if (!slug) return '';
+  try {
+    return decodeURIComponent(slug);
+  } catch {
+    return slug;
+  }
+}
+
+let cachedPetStage: ComponentType<PetStageProps> | null = null;
+let hasLoggedChunkFailure = false;
 
 interface PlaceholderProps {
   eyebrow: string;
@@ -105,52 +136,121 @@ interface CatPageProps {
 }
 
 function CatPage({ slug }: CatPageProps) {
-  const displaySlug = slug ?? '';
+  const catName = formatCatName(slug);
+  const [StageComponent, setStageComponent] =
+    useState<ComponentType<PetStageProps> | null>(() => cachedPetStage);
+  const [loadFailed, setLoadFailed] = useState(false);
+
+  useEffect(() => {
+    if (cachedPetStage) {
+      setStageComponent(() => cachedPetStage);
+      return;
+    }
+
+    let cancelled = false;
+    import('./pet/PetStage')
+      .then((mod) => {
+        cachedPetStage = mod.PetStage;
+        if (!cancelled) {
+          setStageComponent(() => mod.PetStage);
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          if (!hasLoggedChunkFailure) {
+            hasLoggedChunkFailure = true;
+            console.warn('Failed to load PetStage chunk:', err);
+          }
+          setLoadFailed(true);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (loadFailed) {
+    return (
+      <section class="cat-page">
+        <div
+          class="pet-stage pet-stage--fallback"
+          style={{ backgroundImage: `url(${bgPhotoUrl})` }}
+        >
+          <img
+            src={sampleCatUrl}
+            alt={catName ? `${catName} curled up on a blanket` : 'Cat on a blanket'}
+            class="pet-fallback-cat"
+          />
+          <div class="pet-fallback-light" aria-hidden="true" />
+          {catName ? <h1 class="pet-cat-label">{catName}</h1> : null}
+          <p class="pet-fallback-message" role="status">
+            Your browser can&apos;t show petting here, but the cat still loves you.
+          </p>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section class="cat-page">
-      <header class="cat-page-header">
-        <h1 class="cat-page-title">
-          {displaySlug ? `Pet ${displaySlug}` : 'Pet this cat'}
-        </h1>
-        {displaySlug ? (
-          <p class="slug-badge cat-page-slug">purr.si/{displaySlug}</p>
-        ) : null}
+      {StageComponent ? (
+        <StageComponent
+          imageUrl={sampleCatUrl}
+          bgUrl={bgPhotoUrl}
+          catName={catName}
+        />
+      ) : (
+        <div
+          class="pet-stage pet-stage--loading"
+          style={{ backgroundImage: `url(${bgPhotoUrl})` }}
+          aria-busy="true"
+          aria-label="Loading cat petting stage"
+        >
+          {catName ? <h1 class="pet-cat-label">{catName}</h1> : null}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function AppShell() {
+  const { path } = useLocation();
+  const immersive = isCatRoute(path);
+
+  return (
+    <div class={`app-shell${immersive ? ' app-shell--immersive' : ''}`}>
+      <header class={`top-bar${immersive ? ' top-bar--overlay' : ''}`}>
+        <div class="top-bar-inner">
+          <a href="/" class="wordmark">
+            purr.si
+          </a>
+          <a href="/new" class="add-cat-link">
+            + Add your cat
+          </a>
+        </div>
       </header>
 
-      <PetStage imageUrl={sampleCatUrl} />
-    </section>
+      <main class={`main-content${immersive ? ' main-content--immersive' : ''}`}>
+        <Router>
+          <Route path="/" component={FeedPage} />
+          <Route path="/new" component={UploadPage} />
+          <Route path="/me" component={DashboardPage} />
+          <Route path="/about" component={AboutPage} />
+          <Route path="/privacy" component={PrivacyPage} />
+          <Route path="/terms" component={TermsPage} />
+          <Route path="/:slug" component={CatPage} />
+          <Route default component={NotFoundPage} />
+        </Router>
+      </main>
+    </div>
   );
 }
 
 export function App() {
   return (
     <LocationProvider>
-      <div class="app-shell">
-        <header class="top-bar">
-          <div class="top-bar-inner">
-            <a href="/" class="wordmark">
-              purr.si
-            </a>
-            <a href="/new" class="add-cat-link">
-              + Add your cat
-            </a>
-          </div>
-        </header>
-
-        <main class="main-content">
-          <Router>
-            <Route path="/" component={FeedPage} />
-            <Route path="/new" component={UploadPage} />
-            <Route path="/me" component={DashboardPage} />
-            <Route path="/about" component={AboutPage} />
-            <Route path="/privacy" component={PrivacyPage} />
-            <Route path="/terms" component={TermsPage} />
-            <Route path="/:slug" component={CatPage} />
-            <Route default component={NotFoundPage} />
-          </Router>
-        </main>
-      </div>
+      <AppShell />
     </LocationProvider>
   );
 }
