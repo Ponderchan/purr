@@ -1,0 +1,332 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="920" viewBox="0 0 1200 920" fill="none">
+  <defs>
+    <!-- Body base fur gradient -->
+    <radialGradient id="bodyFur" cx="48%" cy="38%" r="60%">
+      <stop offset="0%" stop-color="#f5c690" />
+      <stop offset="52%" stop-color="#e3995b" />
+      <stop offset="86%" stop-color="#cc793e" />
+      <stop offset="100%" stop-color="#b76530" />
+    </radialGradient>
+
+    <!-- Dorsal warm light highlight -->
+    <radialGradient id="backHighlight" cx="50%" cy="32%" r="48%">
+      <stop offset="0%" stop-color="#fce0ba" stop-opacity="0.72" />
+      <stop offset="65%" stop-color="#f4c28a" stop-opacity="0.22" />
+      <stop offset="100%" stop-color="#e3995b" stop-opacity="0" />
+    </radialGradient>
+
+    <!-- Head fur gradient -->
+    <radialGradient id="headFur" cx="48%" cy="40%" r="58%">
+      <stop offset="0%" stop-color="#f7cc98" />
+      <stop offset="55%" stop-color="#e59c5f" />
+      <stop offset="90%" stop-color="#cb783e" />
+      <stop offset="100%" stop-color="#ba6832" />
+    </radialGradient>
+
+    <!-- Tail fur gradient -->
+    <linearGradient id="tailFur" x1="100%" y1="30%" x2="5%" y2="85%">
+      <stop offset="0%" stop-color="#d48347" />
+      <stop offset="45%" stop-color="#e49b5e" />
+      <stop offset="82%" stop-color="#efc08d" />
+      <stop offset="100%" stop-color="#fae6cd" />
+    </linearGradient>
+
+    <!-- Inner ear soft peach -->
+    <linearGradient id="innerEar" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#d88978" />
+      <stop offset="100%" stop-color="#f1bdb0" />
+    </linearGradient>
+
+    <!-- Cream muzzle & paw fur -->
+    <radialGradient id="creamFur" cx="50%" cy="42%" r="58%">
+      <stop offset="0%" stop-color="#fff3e2" />
+      <stop offset="72%" stop-color="#f7dfc1" />
+      <stop offset="100%" stop-color="#e8c298" />
+    </radialGradient>
+
+    <!-- Clip paths for crisp tabby markings -->
+    <clipPath id="bodyClip">
+      <path d="M 332 325 C 405 215, 575 162, 742 182 C 912 202, 1052 315, 1058 468 C 1063 592, 982 695, 830 722 C 685 748, 505 718, 396 655 C 318 610, 290 520, 305 422 C 311 384, 318 346, 332 325 Z" />
+    </clipPath>
+
+    <clipPath id="tailClip">
+      <path d="M 968 548 C 1032 585, 1044 684, 962 746 C 864 818, 636 822, 465 760 C 408 739, 360 704, 366 664 C 372 628, 418 624, 464 648 C 588 712, 782 722, 885 674 C 930 653, 940 606, 916 576 Z" />
+    </clipPath>
+
+    <clipPath id="headClip">
+      <path d="M 316 286 C 406 284, 476 344, 478 428 C 480 492, 444 544, 386 566 C 344 582, 278 584, 232 564 C 176 540, 144 486, 148 422 C 152 340, 224 288, 316 286 Z" />
+    </clipPath>
+  </defs>
+
+  <!-- Plump curled loaf body -->
+  <g id="cat-body">
+    <path
+      d="M 332 325 C 405 215, 575 162, 742 182 C 912 202, 1052 315, 1058 468 C 1063 592, 982 695, 830 722 C 685 748, 505 718, 396 655 C 318 610, 290 520, 305 422 C 311 384, 318 346, 332 325 Z"
+      fill="url(#bodyFur)"
+    />
+
+    <!-- Body tabby markings & layered fur grain (clipped cleanly to silhouette) -->
+    <g clip-path="url(#bodyClip)">
+      <!-- Soft warm light across upper back -->
+      <ellipse cx="685" cy="365" rx="340" ry="210" fill="url(#backHighlight)" />
+
+      <!-- Soft belly/flank warmth shadow -->
+      <path
+        d="M 365 628 C 510 698, 760 726, 940 660 C 1020 630, 1060 550, 1065 490 L 1075 745 L 330 745 Z"
+        fill="#a85626"
+        opacity="0.22"
+      />
+
+      <!-- Dorsal tabby spine band -->
+      <path
+        d="M 412 276 C 538 228, 718 224, 856 286 C 928 318, 985 376, 1012 454 C 958 408, 898 364, 825 335 C 696 284, 534 286, 424 328 Z"
+        fill="#b8602c"
+        opacity="0.34"
+      />
+
+      <!-- Mackerel tabby stripes curving naturally over ribs and haunches -->
+      <path d="M 465 224 C 492 292, 514 378, 492 462 C 472 385, 456 305, 434 242 Z" fill="#ad5524" opacity="0.46" />
+      <path d="M 552 192 C 588 272, 616 392, 592 508 C 566 402, 542 298, 514 206 Z" fill="#ad5524" opacity="0.5" />
+      <path d="M 648 176 C 692 268, 720 404, 688 548 C 660 416, 636 296, 606 184 Z" fill="#a85020" opacity="0.52" />
+      <path d="M 748 182 C 796 276, 824 415, 788 564 C 762 430, 738 308, 706 188 Z" fill="#a85020" opacity="0.5" />
+      <path d="M 848 208 C 896 302, 920 434, 882 572 C 858 446, 838 332, 804 218 Z" fill="#ad5524" opacity="0.46" />
+      <path d="M 935 262 C 974 348, 992 458, 956 568 C 940 468, 922 372, 894 278 Z" fill="#ad5524" opacity="0.42" />
+
+      <!-- Secondary softer side swirls for organic fur depth -->
+      <path d="M 518 478 C 556 534, 560 618, 526 672" stroke="#ab5627" stroke-width="18" stroke-linecap="round" opacity="0.28" />
+      <path d="M 632 512 C 668 574, 668 656, 632 712" stroke="#ab5627" stroke-width="20" stroke-linecap="round" opacity="0.28" />
+      <path d="M 746 520 C 782 582, 778 662, 736 716" stroke="#ab5627" stroke-width="20" stroke-linecap="round" opacity="0.26" />
+      <path d="M 852 512 C 882 574, 876 648, 834 698" stroke="#ab5627" stroke-width="18" stroke-linecap="round" opacity="0.24" />
+
+      <!-- Soft cream flank highlight -->
+      <path
+        d="M 412 578 C 508 648, 672 678, 816 646 C 728 696, 540 698, 412 632 Z"
+        fill="#fae0bf"
+        opacity="0.34"
+      />
+
+      <!-- Delicate tactile fur wisps across the coat (catch displacement ripples beautifully) -->
+      <g stroke="#fce4c4" stroke-width="4.5" stroke-linecap="round" opacity="0.48">
+        <path d="M 498 286 Q 530 272 564 276" />
+        <path d="M 594 258 Q 634 246 674 252" />
+        <path d="M 702 256 Q 742 250 780 264" />
+        <path d="M 804 282 Q 842 284 876 304" />
+        <path d="M 526 364 Q 564 352 602 362" />
+        <path d="M 636 350 Q 678 342 718 354" />
+        <path d="M 746 358 Q 788 356 826 374" />
+        <path d="M 856 382 Q 892 388 924 412" />
+        <path d="M 548 446 Q 588 438 628 450" />
+        <path d="M 664 442 Q 706 438 746 452" />
+        <path d="M 778 452 Q 818 456 854 474" />
+        <path d="M 488 526 Q 532 528 572 544" />
+        <path d="M 612 536 Q 656 540 698 552" />
+        <path d="M 732 546 Q 774 552 814 562" />
+      </g>
+      <g stroke="#b25928" stroke-width="4" stroke-linecap="round" opacity="0.28">
+        <path d="M 512 318 Q 546 306 582 312" />
+        <path d="M 622 302 Q 662 294 700 304" />
+        <path d="M 732 310 Q 772 308 808 324" />
+        <path d="M 564 404 Q 604 396 642 408" />
+        <path d="M 684 402 Q 726 398 764 414" />
+        <path d="M 804 422 Q 842 426 878 444" />
+        <path d="M 588 492 Q 628 492 668 506" />
+        <path d="M 712 498 Q 752 502 790 516" />
+        <path d="M 888 476 Q 922 492 948 520" />
+      </g>
+    </g>
+
+    <!-- Gentle outer coat contour -->
+    <path
+      d="M 332 325 C 405 215, 575 162, 742 182 C 912 202, 1052 315, 1058 468 C 1063 592, 982 695, 830 722 C 685 748, 505 718, 396 655 C 318 610, 290 520, 305 422 C 311 384, 318 346, 332 325 Z"
+      stroke="#9f5126"
+      stroke-width="4"
+      stroke-opacity="0.26"
+    />
+  </g>
+
+  <!-- Curled fluffy tail wrapping around bottom flank -->
+  <g id="cat-tail">
+    <!-- Subtle shadow where tail nestles under flank -->
+    <path
+      d="M 968 548 C 1032 585, 1044 684, 962 746 C 864 818, 636 822, 465 760 C 408 739, 360 704, 366 664 C 372 628, 418 624, 464 648 C 588 712, 782 722, 885 674 C 930 653, 940 606, 916 576 Z"
+      fill="url(#tailFur)"
+    />
+
+    <g clip-path="url(#tailClip)">
+      <!-- Tail tabby rings -->
+      <path d="M 950 582 C 990 612, 1012 652, 996 686" stroke="#a65224" stroke-width="26" stroke-linecap="round" opacity="0.46" />
+      <path d="M 884 656 C 910 698, 918 756, 892 794" stroke="#a65224" stroke-width="28" stroke-linecap="round" opacity="0.48" />
+      <path d="M 780 694 C 794 742, 792 796, 766 826" stroke="#a65224" stroke-width="28" stroke-linecap="round" opacity="0.46" />
+      <path d="M 668 696 C 672 744, 662 794, 636 820" stroke="#a65224" stroke-width="26" stroke-linecap="round" opacity="0.42" />
+      <path d="M 558 674 C 556 720, 540 766, 514 788" stroke="#a65224" stroke-width="24" stroke-linecap="round" opacity="0.36" />
+
+      <!-- Creamy fluffy tail tip -->
+      <ellipse cx="412" cy="686" rx="68" ry="52" transform="rotate(20 412 686)" fill="url(#creamFur)" />
+
+      <!-- Soft top highlight along tail curve -->
+      <path
+        d="M 922 686 C 818 748, 626 756, 476 694"
+        stroke="#fce5c8"
+        stroke-width="10"
+        stroke-linecap="round"
+        opacity="0.45"
+      />
+    </g>
+
+    <path
+      d="M 968 548 C 1032 585, 1044 684, 962 746 C 864 818, 636 822, 465 760 C 408 739, 360 704, 366 664 C 372 628, 418 624, 464 648 C 588 712, 782 722, 885 674 C 930 653, 940 606, 916 576"
+      stroke="#9f5126"
+      stroke-width="4"
+      stroke-opacity="0.26"
+      stroke-linecap="round"
+    />
+  </g>
+
+  <!-- Tucked cream paws peeking gently under chin -->
+  <g id="cat-paws">
+    <ellipse cx="236" cy="588" rx="62" ry="44" transform="rotate(-14 236 588)" fill="url(#creamFur)" stroke="#b36d40" stroke-width="3.5" stroke-opacity="0.28" />
+    <path d="M 206 594 Q 214 612 224 622" stroke="#c88c62" stroke-width="3.5" stroke-linecap="round" opacity="0.45" />
+    <path d="M 234 596 Q 242 614 250 624" stroke="#c88c62" stroke-width="3.5" stroke-linecap="round" opacity="0.45" />
+
+    <ellipse cx="348" cy="608" rx="58" ry="40" transform="rotate(14 348 608)" fill="url(#creamFur)" stroke="#b36d40" stroke-width="3.5" stroke-opacity="0.28" />
+    <path d="M 332 614 Q 338 630 344 640" stroke="#c88c62" stroke-width="3.5" stroke-linecap="round" opacity="0.45" />
+    <path d="M 360 612 Q 364 628 368 638" stroke="#c88c62" stroke-width="3.5" stroke-linecap="round" opacity="0.45" />
+  </g>
+
+  <!-- Sleeping head resting gently to the left -->
+  <g id="cat-head" transform="rotate(-5 314 432)">
+    <!-- Soft neck shadow grounding head onto shoulders -->
+    <ellipse cx="346" cy="452" rx="164" ry="138" fill="#9c4f24" opacity="0.16" />
+
+    <!-- Left ear -->
+    <g id="ear-left">
+      <path
+        d="M 182 362 C 166 296, 174 226, 204 202 C 232 180, 286 226, 306 294 Z"
+        fill="#d17c42"
+        stroke="#9f5126"
+        stroke-width="3.5"
+        stroke-opacity="0.28"
+      />
+      <path
+        d="M 199 334 C 190 288, 196 244, 214 228 C 232 214, 266 246, 282 294 Z"
+        fill="url(#innerEar)"
+      />
+      <!-- Fluffy cream ear tufts -->
+      <path d="M 218 308 Q 238 286 258 294" stroke="#fae7cf" stroke-width="6" stroke-linecap="round" opacity="0.78" />
+      <path d="M 208 294 Q 226 274 244 278" stroke="#fae7cf" stroke-width="4.5" stroke-linecap="round" opacity="0.65" />
+    </g>
+
+    <!-- Right ear -->
+    <g id="ear-right">
+      <path
+        d="M 446 362 C 462 296, 454 226, 424 202 C 396 180, 342 226, 322 294 Z"
+        fill="#d17c42"
+        stroke="#9f5126"
+        stroke-width="3.5"
+        stroke-opacity="0.28"
+      />
+      <path
+        d="M 429 334 C 438 288, 432 244, 414 228 C 396 214, 362 246, 346 294 Z"
+        fill="url(#innerEar)"
+      />
+      <!-- Fluffy cream ear tufts -->
+      <path d="M 410 308 Q 390 286 370 294" stroke="#fae7cf" stroke-width="6" stroke-linecap="round" opacity="0.78" />
+      <path d="M 420 294 Q 402 274 384 278" stroke="#fae7cf" stroke-width="4.5" stroke-linecap="round" opacity="0.65" />
+    </g>
+
+    <!-- Main head silhouette -->
+    <path
+      d="M 316 286 C 406 284, 476 344, 478 428 C 480 492, 444 544, 386 566 C 344 582, 278 584, 232 564 C 176 540, 144 486, 148 422 C 152 340, 224 288, 316 286 Z"
+      fill="url(#headFur)"
+    />
+
+    <!-- Head tabby markings & cheek fluff -->
+    <g clip-path="url(#headClip)">
+      <!-- Forehead soft cream highlight -->
+      <ellipse cx="314" cy="378" rx="110" ry="74" fill="#fce4c6" opacity="0.34" />
+
+      <!-- Classic tabby M forehead stripes -->
+      <path d="M 314 294 L 314 366" stroke="#aa5425" stroke-width="11" stroke-linecap="round" opacity="0.48" />
+      <path d="M 284 298 C 282 328, 286 356, 296 374" stroke="#aa5425" stroke-width="10" stroke-linecap="round" opacity="0.46" />
+      <path d="M 344 298 C 346 328, 342 356, 332 374" stroke="#aa5425" stroke-width="10" stroke-linecap="round" opacity="0.46" />
+      <path d="M 248 318 C 254 342, 264 364, 276 378" stroke="#aa5425" stroke-width="8" stroke-linecap="round" opacity="0.36" />
+      <path d="M 380 318 C 374 342, 364 364, 352 378" stroke="#aa5425" stroke-width="8" stroke-linecap="round" opacity="0.36" />
+
+      <!-- Side cheek tabby accents -->
+      <path d="M 152 414 Q 186 418 210 430" stroke="#aa5425" stroke-width="9" stroke-linecap="round" opacity="0.36" />
+      <path d="M 156 446 Q 188 446 212 454" stroke="#aa5425" stroke-width="8" stroke-linecap="round" opacity="0.32" />
+      <path d="M 476 414 Q 442 418 418 430" stroke="#aa5425" stroke-width="9" stroke-linecap="round" opacity="0.36" />
+      <path d="M 472 446 Q 440 446 416 454" stroke="#aa5425" stroke-width="8" stroke-linecap="round" opacity="0.32" />
+
+      <!-- Cream cheeks & chin -->
+      <ellipse cx="274" cy="512" rx="68" ry="52" fill="url(#creamFur)" opacity="0.92" />
+      <ellipse cx="352" cy="512" rx="68" ry="52" fill="url(#creamFur)" opacity="0.92" />
+      <ellipse cx="313" cy="542" rx="54" ry="38" fill="#fdf1e1" opacity="0.95" />
+
+      <!-- Soft rosy sleeping cheek blush -->
+      <ellipse cx="222" cy="482" rx="28" ry="16" fill="#df7b63" opacity="0.24" />
+      <ellipse cx="404" cy="482" rx="28" ry="16" fill="#df7b63" opacity="0.24" />
+    </g>
+
+    <!-- Soft head outline -->
+    <path
+      d="M 316 286 C 406 284, 476 344, 478 428 C 480 492, 444 544, 386 566 C 344 582, 278 584, 232 564 C 176 540, 144 486, 148 422 C 152 340, 224 288, 316 286 Z"
+      stroke="#9f5126"
+      stroke-width="4"
+      stroke-opacity="0.26"
+    />
+
+    <!-- Peaceful closed sleeping eyes -->
+    <path
+      d="M 222 436 C 234 456, 266 456, 280 436"
+      stroke="#5c3522"
+      stroke-width="7.5"
+      stroke-linecap="round"
+      fill="none"
+    />
+    <path
+      d="M 218 440 L 210 434"
+      stroke="#5c3522"
+      stroke-width="4.5"
+      stroke-linecap="round"
+    />
+    <path
+      d="M 346 436 C 360 456, 392 456, 404 436"
+      stroke="#5c3522"
+      stroke-width="7.5"
+      stroke-linecap="round"
+      fill="none"
+    />
+    <path
+      d="M 408 440 L 416 434"
+      stroke="#5c3522"
+      stroke-width="4.5"
+      stroke-linecap="round"
+    />
+
+    <!-- Cute coral-terracotta nose -->
+    <path
+      d="M 296 474 C 296 468, 330 468, 330 474 C 330 484, 319 494, 313 494 C 307 494, 296 484, 296 474 Z"
+      fill="#cf6e5c"
+    />
+    <ellipse cx="309" cy="476" rx="7" ry="3.5" fill="#efb4a8" opacity="0.65" />
+
+    <!-- Peaceful gentle smile -->
+    <path
+      d="M 313 494 L 313 505 M 288 510 C 295 520, 307 518, 313 506 C 319 518, 331 520, 338 510"
+      stroke="#6e412b"
+      stroke-width="5"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      fill="none"
+    />
+
+    <!-- Neat soft whiskers -->
+    <g stroke="#8a593d" stroke-width="3.5" stroke-linecap="round" opacity="0.52">
+      <path d="M 212 496 Q 170 492 138 486" />
+      <path d="M 210 512 Q 168 516 136 522" />
+      <path d="M 414 496 Q 456 492 488 486" />
+      <path d="M 416 512 Q 458 516 490 522" />
+    </g>
+  </g>
+</svg>

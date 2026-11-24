@@ -1,4 +1,6 @@
-import { LocationProvider, Route, Router, useLocation } from 'preact-iso';
+import { LocationProvider, Route, Router } from 'preact-iso';
+import sampleCatUrl from './assets/sample-cat.svg';
+import { PetStage } from './pet/PetStage';
 
 interface PlaceholderProps {
   eyebrow: string;
@@ -83,30 +85,41 @@ function TermsPage() {
   );
 }
 
+function NotFoundPage() {
+  return (
+    <section class="page-card">
+      <p class="page-eyebrow">404</p>
+      <h1 class="page-title">Page not found</h1>
+      <p class="page-body">
+        There is no cat curled up at this address.
+      </p>
+      <a href="/" class="page-action-link">
+        Back to feed
+      </a>
+    </section>
+  );
+}
+
 interface CatPageProps {
   slug?: string;
 }
 
 function CatPage({ slug }: CatPageProps) {
-  const { path } = useLocation();
-  let displaySlug = slug ?? '';
-
-  if (!displaySlug) {
-    const rawPath = path.replace(/^\/+/, '');
-    try {
-      displaySlug = decodeURIComponent(rawPath);
-    } catch {
-      displaySlug = rawPath;
-    }
-  }
+  const displaySlug = slug ?? '';
 
   return (
-    <PlaceholderPage
-      eyebrow="Cat page"
-      title={displaySlug ? `Pet ${displaySlug}` : 'Cat page'}
-      description="The interactive petting canvas for this cat will live here."
-      badge={displaySlug ? `purr.si/${displaySlug}` : undefined}
-    />
+    <section class="cat-page">
+      <header class="cat-page-header">
+        <h1 class="cat-page-title">
+          {displaySlug ? `Pet ${displaySlug}` : 'Pet this cat'}
+        </h1>
+        {displaySlug ? (
+          <p class="slug-badge cat-page-slug">purr.si/{displaySlug}</p>
+        ) : null}
+      </header>
+
+      <PetStage imageUrl={sampleCatUrl} />
+    </section>
   );
 }
 
@@ -134,7 +147,7 @@ export function App() {
             <Route path="/privacy" component={PrivacyPage} />
             <Route path="/terms" component={TermsPage} />
             <Route path="/:slug" component={CatPage} />
-            <Route default component={CatPage} />
+            <Route default component={NotFoundPage} />
           </Router>
         </main>
       </div>

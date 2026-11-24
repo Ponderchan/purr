@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="220" height="260" viewBox="0 0 220 260" fill="none">
+  <defs>
+    <!-- Warm flat-styled hand shading -->
+    <linearGradient id="handSkin" x1="25%" y1="10%" x2="80%" y2="95%">
+      <stop offset="0%" stop-color="#f7d3b6" />
+      <stop offset="60%" stop-color="#edc09e" />
+      <stop offset="100%" stop-color="#dfa983" />
+    </linearGradient>
+
+    <linearGradient id="sleeveKnit" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#628679" />
+      <stop offset="100%" stop-color="#48675c" />
+    </linearGradient>
+  </defs>
+
+  <!-- Soft shadow beneath hand for floating depth -->
+  <g opacity="0.16" transform="translate(4, 7)">
+    <path
+      d="M 62 184 C 48 164, 30 144, 24 128 C 19 114, 30 102, 43 108 C 53 113, 62 126, 70 135 L 70 52 C 70 38, 88 36, 92 50 L 96 106 L 99 30 C 99 15, 119 15, 121 30 L 122 104 L 128 38 C 130 24, 149 26, 149 41 L 146 108 L 156 62 C 159 49, 177 53, 175 68 L 166 146 C 163 172, 152 190, 144 204 L 74 204 Z"
+      fill="#261a12"
+    />
+  </g>
+
+  <!-- Open hand seen from above -->
+  <g id="hand-body">
+    <path
+      d="M 62 184 C 48 164, 30 144, 24 128 C 19 114, 30 102, 43 108 C 53 113, 62 126, 70 135 L 70 52 C 70 38, 88 36, 92 50 L 96 106 L 99 30 C 99 15, 119 15, 121 30 L 122 104 L 128 38 C 130 24, 149 26, 149 41 L 146 108 L 156 62 C 159 49, 177 53, 175 68 L 166 146 C 163 172, 152 190, 144 204 L 74 204 Z"
+      fill="url(#handSkin)"
+      stroke="#bd8865"
+      stroke-width="3"
+      stroke-linejoin="round"
+    />
+
+    <!-- Subtle finger separation lines & knuckle accents -->
+    <path d="M 96 104 L 97 122" stroke="#c9936f" stroke-width="2.5" stroke-linecap="round" opacity="0.6" />
+    <path d="M 122 102 L 122 122" stroke="#c9936f" stroke-width="2.5" stroke-linecap="round" opacity="0.6" />
+    <path d="M 146 106 L 144 126" stroke="#c9936f" stroke-width="2.5" stroke-linecap="round" opacity="0.6" />
+
+    <!-- Soft fingernails -->
+    <rect x="74" y="42" width="12" height="14" rx="6" fill="#fbe7d8" opacity="0.82" />
+    <rect x="103" y="21" width="13" height="15" rx="6.5" fill="#fbe7d8" opacity="0.82" />
+    <rect x="132" y="31" width="12" height="14" rx="6" fill="#fbe7d8" opacity="0.82" />
+    <rect x="159" y="56" width="11" height="12" rx="5.5" transform="rotate(9 164 62)" fill="#fbe7d8" opacity="0.82" />
+    <ellipse cx="33" cy="116" rx="5.5" ry="7" transform="rotate(-34 33 116)" fill="#fbe7d8" opacity="0.78" />
+
+    <!-- Subtle back-of-hand highlight -->
+    <ellipse cx="114" cy="144" rx="30" ry="20" fill="#fce4cf" opacity="0.4" />
+  </g>
+
+  <!-- Cozy knit sweater cuff / sleeve -->
+  <g id="hand-sleeve">
+    <path
+      d="M 65 196 C 65 188, 72 184, 80 184 L 142 184 C 150 184, 156 189, 157 197 L 164 252 C 164 255, 161 257, 158 257 L 64 257 C 61 257, 58 255, 58 252 Z"
+      fill="url(#sleeveKnit)"
+      stroke="#385249"
+      stroke-width="3"
+      stroke-linejoin="round"
+    />
+    <!-- Terracotta accent band on cuff -->
+    <path
+      d="M 65 201 L 157 201 L 158 210 L 64 210 Z"
+      fill="#c85a32"
+      opacity="0.92"
+    />
+    <!-- Ribbed knit lines -->
+    <g stroke="#3a544b" stroke-width="2.5" stroke-linecap="round" opacity="0.45">
+      <line x1="80" y1="216" x2="78" y2="250" />
+      <line x1="96" y1="216" x2="95" y2="250" />
+      <line x1="112" y1="216" x2="112" y2="250" />
+      <line x1="128" y1="216" x2="129" y2="250" />
+      <line x1="144" y1="216" x2="146" y2="250" />
+    </g>
+  </g>
+</svg>
