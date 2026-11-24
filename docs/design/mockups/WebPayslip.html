@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>网页 · 员工室</title>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&amp;family=Noto+Sans+SC:wght@400;500;700;900&amp;family=IBM+Plex+Mono:wght@400;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#B04A17}a:hover{color:#8E3A10}
+</style>
+</helmet>
+<div style="width: 100%; min-height: 900px; background: #F7F3EE; font-family: 'Noto Sans SC', system-ui, sans-serif; color: #231C17; display: flex; flex-direction: column">
+  <header style="min-height: 64px; box-sizing: border-box; padding: 10px 32px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 32px; border-bottom: 1px solid #E6DED5">
+    <a href="WebLobby.html" style="display: inline-flex; align-items: baseline; gap: 8px; text-decoration: none; color: #231C17">
+      <span style="font-family: 'Bricolage Grotesque', sans-serif; font-size: 24px; font-weight: 800; letter-spacing: -0.01em">purr.si</span>
+      <span style="font-size: 13px; font-weight: 500; color: #6E6259">撸猫馆</span>
+    </a>
+    <nav aria-label="主导航" style="display: flex; flex-wrap: wrap; gap: 4px; flex: 1">
+      <a href="WebLobby.html" style="height: 40px; line-height: 40px; padding: 0 14px; border-radius: 999px; color: #6E6259; font-size: 14px; font-weight: 500; text-decoration: none">大厅</a>
+      <a href="#" style="height: 40px; line-height: 40px; padding: 0 14px; border-radius: 999px; color: #6E6259; font-size: 14px; font-weight: 500; text-decoration: none">荣誉墙</a>
+      <a href="#" style="height: 40px; line-height: 40px; padding: 0 14px; border-radius: 999px; color: #6E6259; font-size: 14px; font-weight: 500; text-decoration: none">入馆卡</a>
+      <a href="#" aria-current="page" style="height: 40px; line-height: 40px; padding: 0 14px; border-radius: 999px; background: #FFFFFF; border: 1px solid #E6DED5; color: #231C17; font-size: 14px; font-weight: 700; text-decoration: none; box-sizing: border-box">员工室</a>
+    </nav>
+    <button type="button" aria-label="切换猫：当前 mochi" style="display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 12px 0 6px; border: 1px solid #E6DED5; border-radius: 999px; background: #FFFFFF; font-family: inherit; color: #231C17">
+      <span style="width: 32px; height: 32px; border-radius: 50%; overflow: hidden; border: 2px solid #C9962E; flex: none"><img src="../../../src/assets/photo/sample-cat.webp" alt="" style="width: 180%; margin: -10% 0 0 -10%"></span>
+      <span style="font-size: 15px; font-weight: 700">mochi</span>
+      <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg>
+    </button>
+  </header>
+
+  <main style="width: 100%; max-width: 1240px; margin: 0 auto; box-sizing: border-box; padding: 32px; display: flex; flex-wrap: wrap; gap: 32px; align-items: flex-start">
+    <div style="flex: 1 1 340px; max-width: 400px; display: flex; flex-direction: column; gap: 14px">
+      <div style="position: relative; background: #FFFFFF; border-radius: 6px; padding: 24px; display: flex; flex-direction: column; gap: 11px; font-family: 'IBM Plex Mono', monospace; border-top: 7px dotted #F7F3EE; border-bottom: 7px dotted #F7F3EE; box-shadow: 0 1px 0 #E6DED5">
+        <div style="display: flex; justify-content: space-between; align-items: baseline"><span style="font-family: 'Bricolage Grotesque', sans-serif; font-size: 14px; font-weight: 800">purr.si 撸猫馆</span><span style="font-size: 11px; color: #6E6259">No. 000214</span></div>
+        <div style="font-family: 'Noto Sans SC', sans-serif; font-size: 22px; font-weight: 900">mochi 的工资条</div>
+        <div style="font-size: 12px; color: #6E6259">第 47 周 · 11.17–11.23</div>
+        <div style="border-top: 1px dashed #CFC4B8"></div>
+        <div style="display: flex; justify-content: space-between; font-size: 14px"><span style="font-family: 'Noto Sans SC', sans-serif">上班</span><span>7 天</span></div>
+        <div style="display: flex; justify-content: space-between; font-size: 14px"><span style="font-family: 'Noto Sans SC', sans-serif">被撸人数</span><span>1,284</span></div>
+        <div style="display: flex; justify-content: space-between; font-size: 14px"><span style="font-family: 'Noto Sans SC', sans-serif">来自国家</span><span>23</span></div>
+        <div style="display: flex; justify-content: space-between; font-size: 14px"><span style="font-family: 'Noto Sans SC', sans-serif">新挚友</span><span>6</span></div>
+        <div style="display: flex; justify-content: space-between; font-size: 14px"><span style="font-family: 'Noto Sans SC', sans-serif">收到投喂</span><span>41 次</span></div>
+        <div style="border-top: 1px dashed #CFC4B8"></div>
+        <div style="display: flex; justify-content: space-between; align-items: baseline"><span style="font-family: 'Noto Sans SC', sans-serif; font-size: 16px; font-weight: 900">罐罐工资</span><span style="font-size: 24px; font-weight: 600; color: #B04A17">37 罐</span></div>
+        <div style="position: absolute; right: 20px; top: 70px; width: 80px; height: 80px; border-radius: 50%; border: 2.5px solid #2E6F62; color: #2E6F62; display: flex; flex-direction: column; align-items: center; justify-content: center; transform: rotate(-12deg); opacity: 0.9; box-sizing: border-box"><span style="font-family: 'Noto Sans SC', sans-serif; font-size: 15px; font-weight: 900">已发放</span><span style="font-size: 9px">2026.11.24</span></div>
+      </div>
+      <button type="button" style="height: 52px; border: 0; border-radius: 999px; background: #B04A17; color: #FFFFFF; font-family: inherit; font-size: 16px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 8px">
+        <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M8 7l4-4 4 4M5 13v6h14v-6"></path></svg>晒工资条</button>
+      <span style="font-size: 13px; color: #6E6259; text-align: center">每周一自动发，可以下载图片发到小红书、Instagram</span>
+    </div>
+
+    <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px">
+        <div style="padding: 18px; border-radius: 16px; background: #FFFFFF; border: 1px solid #E6DED5; display: flex; flex-direction: column; gap: 6px">
+          <span style="font-size: 13px; color: #6E6259">本周被撸人数</span>
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 30px; font-weight: 600">1,284</span>
+          <span style="font-size: 12px; color: #2E6F62; font-weight: 700">比上周多 196 人</span>
+        </div>
+        <div style="padding: 18px; border-radius: 16px; background: #FFFFFF; border: 1px solid #E6DED5; display: flex; flex-direction: column; gap: 6px">
+          <span style="font-size: 13px; color: #6E6259">铁粉</span>
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 30px; font-weight: 600">14</span>
+          <span style="font-size: 12px; color: #6E6259">本周新增 3 位</span>
+        </div>
+        <div style="padding: 18px; border-radius: 16px; background: #FFFFFF; border: 1px solid #E6DED5; display: flex; flex-direction: column; gap: 6px">
+          <span style="font-size: 13px; color: #6E6259">待提现</span>
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 30px; font-weight: 600">$12.30</span>
+          <a href="#" style="font-size: 12px; font-weight: 700">满 $20 可提 · 查看明细</a>
+        </div>
+      </div>
+
+      <section style="padding: 20px; border-radius: 16px; background: #FFFFFF; border: 1px solid #E6DED5; display: flex; flex-direction: column; gap: 14px">
+        <div style="display: flex; justify-content: space-between; align-items: baseline"><h2 style="margin: 0; font-size: 17px; font-weight: 900">这周每天有多少人来撸</h2><span style="font-size: 12px; color: #6E6259">周六最多 · 236 人</span></div>
+        <div role="img" aria-label="周一到周日每天被撸人数：142、168、155、201、236、198、184" style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 12px; align-items: end; height: 150px">
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 6px"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #6E6259">142</span><div style="width: 100%; height: 72px; border-radius: 8px 8px 2px 2px; background: #E8C3A9"></div></div>
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 6px"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #6E6259">168</span><div style="width: 100%; height: 85px; border-radius: 8px 8px 2px 2px; background: #E8C3A9"></div></div>
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 6px"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #6E6259">155</span><div style="width: 100%; height: 79px; border-radius: 8px 8px 2px 2px; background: #E8C3A9"></div></div>
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 6px"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #6E6259">201</span><div style="width: 100%; height: 102px; border-radius: 8px 8px 2px 2px; background: #E8C3A9"></div></div>
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 6px"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 600; color: #231C17">236</span><div style="width: 100%; height: 120px; border-radius: 8px 8px 2px 2px; background: #B04A17"></div></div>
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 6px"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #6E6259">198</span><div style="width: 100%; height: 101px; border-radius: 8px 8px 2px 2px; background: #E8C3A9"></div></div>
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 6px"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #6E6259">184</span><div style="width: 100%; height: 94px; border-radius: 8px 8px 2px 2px; background: #E8C3A9"></div></div>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 12px; font-size: 12px; color: #6E6259; text-align: center"><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span style="color: #231C17; font-weight: 700">六</span><span>日</span></div>
+      </section>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 16px">
+        <section style="flex: 1 1 300px; padding: 20px; border-radius: 16px; background: #FFFFFF; border: 1px solid #E6DED5; display: flex; flex-direction: column; gap: 12px">
+          <h2 style="margin: 0; font-size: 17px; font-weight: 900">客人来自</h2>
+          <div style="display: flex; flex-direction: column; gap: 10px; font-size: 13px">
+            <div style="display: grid; grid-template-columns: 64px 1fr 48px; align-items: center; gap: 10px"><span style="font-family: 'IBM Plex Mono', monospace; font-weight: 600">JP</span><span style="height: 10px; border-radius: 999px; background: #E6DED5"><span style="display: block; width: 100%; height: 100%; border-radius: 999px; background: #2E6F62"></span></span><span style="font-family: 'IBM Plex Mono', monospace; text-align: right">312</span></div>
+            <div style="display: grid; grid-template-columns: 64px 1fr 48px; align-items: center; gap: 10px"><span style="font-family: 'IBM Plex Mono', monospace; font-weight: 600">US</span><span style="height: 10px; border-radius: 999px; background: #E6DED5"><span style="display: block; width: 67%; height: 100%; border-radius: 999px; background: #2E6F62"></span></span><span style="font-family: 'IBM Plex Mono', monospace; text-align: right">208</span></div>
+            <div style="display: grid; grid-template-columns: 64px 1fr 48px; align-items: center; gap: 10px"><span style="font-family: 'IBM Plex Mono', monospace; font-weight: 600">BR</span><span style="height: 10px; border-radius: 999px; background: #E6DED5"><span style="display: block; width: 31%; height: 100%; border-radius: 999px; background: #2E6F62"></span></span><span style="font-family: 'IBM Plex Mono', monospace; text-align: right">96</span></div>
+            <div style="display: grid; grid-template-columns: 64px 1fr 48px; align-items: center; gap: 10px"><span style="font-family: 'IBM Plex Mono', monospace; font-weight: 600">KR</span><span style="height: 10px; border-radius: 999px; background: #E6DED5"><span style="display: block; width: 26%; height: 100%; border-radius: 999px; background: #2E6F62"></span></span><span style="font-family: 'IBM Plex Mono', monospace; text-align: right">81</span></div>
+            <div style="display: grid; grid-template-columns: 64px 1fr 48px; align-items: center; gap: 10px"><span>其他 19 国</span><span style="height: 10px; border-radius: 999px; background: #E6DED5"></span><span style="font-family: 'IBM Plex Mono', monospace; text-align: right">587</span></div>
+          </div>
+        </section>
+        <section style="flex: 1 1 300px; padding: 20px; border-radius: 16px; background: #231C17; color: #F7F3EE; display: flex; flex-direction: column; gap: 10px; position: relative; overflow: hidden">
+          <div style="position: absolute; right: -36px; top: -36px; width: 120px; height: 120px; border-radius: 50%; border: 18px solid #C9962E"></div>
+          <span style="font-size: 12px; font-weight: 700; color: #E8C46A">Purr+ 正式合同</span>
+          <span style="font-size: 20px; font-weight: 900">mochi 是正式馆猫</span>
+          <span style="font-size: 13px; line-height: 1.6; color: #CFC4B8">真猫呼噜、3 个姿势、自定义链接 purr.si/mochi、收投喂、开包间都已开启。</span>
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #CFC4B8">$2.99/月 · 12.24 续费</span>
+          <a href="#" style="margin-top: auto; align-self: flex-start; color: #FFFFFF; font-size: 13px; font-weight: 700">管理合同</a>
+        </section>
+      </div>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

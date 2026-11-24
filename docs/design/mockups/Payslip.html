@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>员工室 · 工资条</title>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,800&amp;family=Noto+Sans+SC:wght@400;500;700;900&amp;family=IBM+Plex+Mono:wght@400;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#B04A17}a:hover{color:#8E3A10}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F7F3EE; font-family: 'Noto Sans SC', system-ui, sans-serif; color: #231C17">
+  <div style="position: absolute; left: 16px; right: 16px; top: 16px; display: flex; flex-direction: column; gap: 16px">
+    <header style="display: flex; justify-content: space-between; align-items: center">
+      <h1 style="margin: 0; font-size: 26px; font-weight: 900">员工室</h1>
+      <button type="button" aria-label="切换猫：当前 mochi" style="display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 12px 0 6px; border: 1px solid #E6DED5; border-radius: 999px; background: #FFFFFF; font-family: inherit; color: #231C17">
+        <span style="width: 32px; height: 32px; border-radius: 50%; overflow: hidden; border: 2px solid #C9962E; flex: none"><img src="../../../src/assets/photo/sample-cat.webp" alt="" style="width: 180%; margin: -10% 0 0 -10%"></span>
+        <span style="font-size: 15px; font-weight: 700">mochi</span>
+        <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg>
+      </button>
+    </header>
+
+    <div style="position: relative; background: #FFFFFF; border-radius: 6px; padding: 22px 22px 20px; display: flex; flex-direction: column; gap: 11px; font-family: 'IBM Plex Mono', monospace; border-top: 7px dotted #F7F3EE; border-bottom: 7px dotted #F7F3EE; box-shadow: 0 1px 0 #E6DED5">
+      <div style="display: flex; justify-content: space-between; align-items: baseline">
+        <span style="font-family: 'Bricolage Grotesque', sans-serif; font-size: 14px; font-weight: 800">purr.si 撸猫馆</span>
+        <span style="font-size: 11px; color: #6E6259">No. 000214</span>
+      </div>
+      <div style="font-family: 'Noto Sans SC', sans-serif; font-size: 20px; font-weight: 900">mochi 的工资条</div>
+      <div style="font-size: 12px; color: #6E6259">第 47 周 · 11.17–11.23</div>
+      <div style="border-top: 1px dashed #CFC4B8"></div>
+      <div style="display: flex; justify-content: space-between; font-size: 14px"><span style="font-family: 'Noto Sans SC', sans-serif">上班</span><span>7 天</span></div>
+      <div style="display: flex; justify-content: space-between; font-size: 14px"><span style="font-family: 'Noto Sans SC', sans-serif">被撸人数</span><span>1,284</span></div>
+      <div style="display: flex; justify-content: space-between; font-size: 14px"><span style="font-family: 'Noto Sans SC', sans-serif">来自国家</span><span>23</span></div>
+      <div style="display: flex; justify-content: space-between; font-size: 14px"><span style="font-family: 'Noto Sans SC', sans-serif">新挚友</span><span>6</span></div>
+      <div style="display: flex; justify-content: space-between; font-size: 14px"><span style="font-family: 'Noto Sans SC', sans-serif">收到投喂</span><span>41 次</span></div>
+      <div style="border-top: 1px dashed #CFC4B8"></div>
+      <div style="display: flex; justify-content: space-between; align-items: baseline"><span style="font-family: 'Noto Sans SC', sans-serif; font-size: 16px; font-weight: 900">罐罐工资</span><span style="font-size: 22px; font-weight: 600; color: #B04A17">37 罐</span></div>
+      <div style="position: absolute; right: 18px; top: 66px; width: 78px; height: 78px; border-radius: 50%; border: 2.5px solid #2E6F62; color: #2E6F62; display: flex; flex-direction: column; align-items: center; justify-content: center; transform: rotate(-12deg); opacity: 0.9; box-sizing: border-box">
+        <span style="font-family: 'Noto Sans SC', sans-serif; font-size: 15px; font-weight: 900">已发放</span>
+        <span style="font-size: 9px">2026.11.24</span>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <button type="button" style="height: 52px; border: 0; border-radius: 999px; background: #B04A17; color: #FFFFFF; font-family: inherit; font-size: 16px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 8px">
+        <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M8 7l4-4 4 4M5 13v6h14v-6"></path></svg>
+        晒工资条</button>
+      <a href="#" style="align-self: center; height: 40px; line-height: 40px; font-size: 14px; font-weight: 700">提现 · 已攒 $12.30，满 $20 可提</a>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <div style="font-size: 15px; font-weight: 700">这周的客人来自</div>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap">
+        <span style="display: inline-flex; gap: 6px; align-items: center; height: 32px; padding: 0 12px; border-radius: 999px; background: #FFFFFF; border: 1px solid #E6DED5; font-size: 13px"><b style="font-family: 'IBM Plex Mono', monospace">JP</b><span style="font-family: 'IBM Plex Mono', monospace; color: #6E6259">312</span></span>
+        <span style="display: inline-flex; gap: 6px; align-items: center; height: 32px; padding: 0 12px; border-radius: 999px; background: #FFFFFF; border: 1px solid #E6DED5; font-size: 13px"><b style="font-family: 'IBM Plex Mono', monospace">US</b><span style="font-family: 'IBM Plex Mono', monospace; color: #6E6259">208</span></span>
+        <span style="display: inline-flex; gap: 6px; align-items: center; height: 32px; padding: 0 12px; border-radius: 999px; background: #FFFFFF; border: 1px solid #E6DED5; font-size: 13px"><b style="font-family: 'IBM Plex Mono', monospace">BR</b><span style="font-family: 'IBM Plex Mono', monospace; color: #6E6259">96</span></span>
+        <span style="display: inline-flex; gap: 6px; align-items: center; height: 32px; padding: 0 12px; border-radius: 999px; background: #FFFFFF; border: 1px solid #E6DED5; font-size: 13px"><b style="font-family: 'IBM Plex Mono', monospace">KR</b><span style="font-family: 'IBM Plex Mono', monospace; color: #6E6259">81</span></span>
+        <span style="display: inline-flex; gap: 6px; align-items: center; height: 32px; padding: 0 12px; border-radius: 999px; background: #DCEDE8; font-size: 13px; color: #2E6F62; font-weight: 700">还有 19 个国家</span>
+      </div>
+    </div>
+  </div>
+
+  <nav aria-label="主导航" style="position: absolute; left: 0; right: 0; bottom: 0; height: 84px; box-sizing: border-box; padding: 8px 12px 22px; background: #FFFFFF; border-top: 1px solid #E6DED5; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr))">
+    <a href="Lobby.html" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: #6E6259; text-decoration: none; font-size: 11px; font-weight: 500">
+      <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11l8-6 8 6v8a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"></path><path d="M10 20v-5h4v5"></path></svg>大厅</a>
+    <a href="#" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: #6E6259; text-decoration: none; font-size: 11px; font-weight: 500">
+      <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h8v5a4 4 0 0 1-8 0z"></path><path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M9 20h6"></path></svg>荣誉墙</a>
+    <a href="GuestCard.html" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: #6E6259; text-decoration: none; font-size: 11px; font-weight: 500">
+      <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2"></rect><path d="M3 10h18M7 15h4"></path></svg>入馆卡</a>
+    <a href="#" aria-current="page" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: #B04A17; text-decoration: none; font-size: 11px; font-weight: 700">
+      <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="7" width="16" height="13" rx="2"></rect><path d="M9 7V5h6v2M4 12h16"></path></svg>员工室</a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

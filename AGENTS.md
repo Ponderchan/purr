@@ -16,6 +16,11 @@ Read this file and `SPEC.md` before every task. `SPEC.md` is the source of truth
 - All art (hand, background, sample cat, icons) is either drawn by you as SVG/canvas code, or provided by the owner. No stock images, no images fetched from the web.
 - Purr sound is synthesised with Web Audio, not an audio file.
 
+## Design (mandatory for any UI work)
+- `docs/design/DESIGN.md` is the visual source of truth: tokens, type, components, copy, page index.
+- Before building or changing a page, open its screenshot in `docs/design/screens/` and its mockup in `docs/design/mockups/` (open the HTML in Chrome). Match layout, colours, type and copy. Use only the tokens in DESIGN.md §2.
+- When done, take your own screenshot at the same size as the mockup and compare them side by side in your summary. List every intentional difference.
+
 ## Secrets and privacy
 - Never commit keys. Client config uses `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` from `.env.local` (gitignored). Server secrets (`SUPABASE_SERVICE_ROLE_KEY`, `GEMINI_API_KEY`) live only in Cloudflare / Supabase secret settings. Keep `.env.example` up to date with names only.
 - Never store IP addresses or precise location. Strip EXIF from every uploaded image before it leaves the browser.
