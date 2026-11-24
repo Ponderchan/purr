@@ -6,6 +6,7 @@ import sampleCatUrl from './assets/photo/sample-cat.webp';
 import { t } from './i18n';
 import { getPreviewCat } from './onboard/previewStore';
 import type { PetStageProps } from './pet/PetStage';
+import { SAMPLE_CAT_RIG } from './pet/rigs/sample';
 
 const STATIC_ROUTES = new Set([
   '/',
@@ -504,6 +505,7 @@ function CatPage({ slug }: CatPageProps) {
         imageUrl={sampleCatUrl}
         bgUrl={bgPhotoUrl}
         catName={catName}
+        rig={SAMPLE_CAT_RIG}
       />
     );
   } else {

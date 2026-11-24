@@ -5,6 +5,7 @@ import {
   DisplacementFilter,
   Graphics,
   ImageSource,
+  MeshPlane,
   RenderTexture,
   Sprite,
   Texture,
@@ -16,6 +17,15 @@ import {
   readMutedPreference,
   writeMutedPreference,
 } from './purr';
+import {
+  CatRig,
+  type CatRigData,
+  type CatRigMeshBinding,
+  type RigAction,
+  type RigDebugState,
+  type RigMood,
+  type RigUvRect,
+} from './rig';
 
 export interface PetStageProps {
   imageUrl: string;
@@ -23,14 +33,46 @@ export interface PetStageProps {
   catName?: string;
   backHref?: string;
   isPreview?: boolean;
+  rig?: CatRigData;
 }
 
 type PetMood = 'idle' | 'petting' | 'purring' | 'melt' | 'nip';
+
+interface PurrRigDebugHandle {
+  play: (action: RigAction) => void;
+  setMood: (mood: RigMood) => void;
+  getState: () => RigDebugState;
+  setMeterForTest: (value: number) => void;
+  triggerNipForTest: () => void;
+  getFrameStats: () => {
+    samples: number;
+    avgFrameMs: number;
+    p95FrameMs: number;
+    maxFrameMs: number;
+    avgRigMs: number;
+    p95RigMs: number;
+    vertexCount: number;
+  };
+  resetFrameStats: () => void;
+}
+
+declare global {
+  interface Window {
+    __purrRig?: PurrRigDebugHandle;
+  }
+}
 
 const DISP_SIZE = 256;
 const NEUTRAL_RGBA = [128 / 255, 128 / 255, 128 / 255, 1];
 const TOUCH_OFFSET_Y = 44;
 const BRUSH_POOL_SIZE = 12;
+
+// Cat MeshPlane density: 40 x 40 segments = 41 x 41 = 1,681 vertices (<= 2,000)
+const CAT_MESH_VERTS_X = 41;
+const CAT_MESH_VERTS_Y = 41;
+// Contact shadow MeshPlanes deform in lockstep with the cat rig (no ghosting/halo)
+const CAT_AO_SHADOW_VERTS = 21; // 20 x 20 segments
+const CAT_SOFT_SHADOW_VERTS = 17; // 16 x 16 segments
 
 // Measured once from src/assets/photo/arm.png (1440 x 2912):
 // - Index/middle/ring fingertip pads (petting contact center): (0.525, 0.148)
@@ -443,6 +485,134 @@ function createSharedWarmLightCanvas(size = 512): HTMLCanvasElement {
   return canvas;
 }
 
+function computeShadowUvRect(info: ShadowTextureInfo): RigUvRect {
+  return {
+    u0: -info.padPx / info.contentW,
+    v0: -info.padPx / info.contentH,
+    uSpan: info.canvasW / info.contentW,
+    vSpan: info.canvasH / info.contentH,
+  };
+}
+
+function drawRigDebugOverlay(
+  g: Graphics,
+  binding: CatRigMeshBinding,
+  state: RigDebugState,
+  texW: number,
+  texH: number,
+  catBaseScale: number,
+): void {
+  const invScale = 1 / Math.max(0.05, catBaseScale);
+  const { positions, verticesX, verticesY } = binding;
+
+  g.clear();
+
+  // 1. Live deformed mesh grid (horizontal and vertical polylines)
+  for (let row = 0; row < verticesY; row++) {
+    const base = row * verticesX * 2;
+    g.moveTo(positions[base], positions[base + 1]);
+    for (let col = 1; col < verticesX; col++) {
+      const idx = base + col * 2;
+      g.lineTo(positions[idx], positions[idx + 1]);
+    }
+  }
+  for (let col = 0; col < verticesX; col++) {
+    const start = col * 2;
+    g.moveTo(positions[start], positions[start + 1]);
+    for (let row = 1; row < verticesY; row++) {
+      const idx = (row * verticesX + col) * 2;
+      g.lineTo(positions[idx], positions[idx + 1]);
+    }
+  }
+  g.stroke({ color: 0xffffff, alpha: 0.24, width: 1 * invScale });
+
+  // 2. Influence circles (body breathing, head, ears)
+  g.circle(
+    state.bodyCenter.x * texW,
+    state.bodyCenter.y * texH,
+    state.bodyRadius * texW,
+  );
+  g.stroke({ color: 0x7fd1b9, alpha: 0.45, width: 1.5 * invScale });
+
+  g.circle(
+    state.head.x * texW,
+    state.head.y * texH,
+    state.headRadius * texW,
+  );
+  g.stroke({ color: 0xe8833a, alpha: 0.5, width: 1.5 * invScale });
+
+  for (let e = 0; e < state.ears.length; e++) {
+    const ear = state.ears[e];
+    const midX = ((ear.base.x + ear.tip.x) * 0.5) * texW;
+    const midY = ((ear.base.y + ear.tip.y) * 0.5) * texH;
+    g.circle(midX, midY, ear.radius * texW);
+  }
+  if (state.ears.length > 0) {
+    g.stroke({ color: 0xff6b8b, alpha: 0.55, width: 1.5 * invScale });
+  }
+
+  // 3. Back / spine polyline
+  if (state.back.length >= 2) {
+    g.moveTo(state.back[0].x * texW, state.back[0].y * texH);
+    for (let i = 1; i < state.back.length; i++) {
+      g.lineTo(state.back[i].x * texW, state.back[i].y * texH);
+    }
+    g.stroke({ color: 0x7fd1b9, alpha: 0.78, width: 2 * invScale });
+    for (let i = 0; i < state.back.length; i++) {
+      g.circle(state.back[i].x * texW, state.back[i].y * texH, 3.5 * invScale);
+      g.fill({ color: 0x7fd1b9, alpha: 0.9 });
+    }
+  }
+
+  // 4. Tail polyline (base -> tip)
+  if (state.tail.length >= 2) {
+    g.moveTo(state.tail[0].x * texW, state.tail[0].y * texH);
+    for (let i = 1; i < state.tail.length; i++) {
+      g.lineTo(state.tail[i].x * texW, state.tail[i].y * texH);
+    }
+    g.stroke({ color: 0xf0c24b, alpha: 0.95, width: 2.8 * invScale });
+    for (let i = 0; i < state.tail.length; i++) {
+      const r = (i === 0 ? 6 : 4.5) * invScale;
+      g.circle(state.tail[i].x * texW, state.tail[i].y * texH, r);
+      g.fill({ color: i === 0 ? 0x231c17 : 0xf0c24b, alpha: 0.95 });
+      g.stroke({ color: 0xf0c24b, alpha: 1, width: 2 * invScale });
+    }
+  }
+
+  // 5. Ear bone(s)
+  for (let e = 0; e < state.ears.length; e++) {
+    const ear = state.ears[e];
+    const bx = ear.base.x * texW;
+    const by = ear.base.y * texH;
+    const tx = ear.tip.x * texW;
+    const ty = ear.tip.y * texH;
+    g.moveTo(bx, by);
+    g.lineTo(tx, ty);
+    g.stroke({ color: 0xff6b8b, alpha: 0.95, width: 2.8 * invScale });
+
+    g.circle(bx, by, 5.5 * invScale);
+    g.fill({ color: 0xff6b8b, alpha: 1 });
+    g.stroke({ color: 0x231c17, alpha: 0.9, width: 1.5 * invScale });
+
+    g.circle(tx, ty, 4.5 * invScale);
+    g.fill({ color: 0xffffff, alpha: 1 });
+    g.stroke({ color: 0xff6b8b, alpha: 1, width: 1.8 * invScale });
+  }
+
+  // 6. Body centre & head landmarks
+  g.circle(
+    state.bodyCenter.x * texW,
+    state.bodyCenter.y * texH,
+    6.5 * invScale,
+  );
+  g.fill({ color: 0x7fd1b9, alpha: 1 });
+  g.stroke({ color: 0x231c17, alpha: 0.95, width: 2 * invScale });
+
+  g.circle(state.head.x * texW, state.head.y * texH, 6.5 * invScale);
+  g.fill({ color: 0xe8833a, alpha: 1 });
+  g.stroke({ color: 0x231c17, alpha: 0.95, width: 2 * invScale });
+}
+
 function moodCaption(mood: PetMood, catName: string): string {
   switch (mood) {
     case 'nip':
@@ -501,6 +671,7 @@ export function PetStage({
   catName,
   backHref = '/',
   isPreview = false,
+  rig,
 }: PetStageProps) {
   const stageRef = useRef<HTMLDivElement | null>(null);
   const canvasHostRef = useRef<HTMLDivElement | null>(null);
@@ -546,11 +717,16 @@ export function PetStage({
         ? window.matchMedia('(prefers-reduced-motion: reduce)')
         : null;
     let reducedMotion = motionQuery?.matches ?? false;
+    const showRigDebug =
+      Boolean(rig) &&
+      typeof window !== 'undefined' &&
+      new URLSearchParams(window.location.search).get('rig') === '1';
 
     const app = new Application();
     let appInitialized = false;
     let resizeObserver: ResizeObserver | null = null;
     let cleanupEvents: (() => void) | null = null;
+    let registeredDebugHandle: PurrRigDebugHandle | null = null;
 
     // Owned textures & filters to destroy cleanly on unmount
     let dispMap: RenderTexture | null = null;
@@ -577,6 +753,15 @@ export function PetStage({
       cleanupEvents = null;
       resizeObserver?.disconnect();
       resizeObserver = null;
+
+      if (
+        registeredDebugHandle &&
+        typeof window !== 'undefined' &&
+        window.__purrRig === registeredDebugHandle
+      ) {
+        delete window.__purrRig;
+      }
+      registeredDebugHandle = null;
 
       purr.destroy();
       if (purrRef.current === purr) {
@@ -816,25 +1001,59 @@ export function PetStage({
       app.stage.addChild(bgVignetteSprite);
 
       // === Layer (b): Two-layer cat contact shadow (wide soft cast + tight AO) ===
-      const catSoftShadowSprite = new Sprite(catSoftShadowTexture);
-      catSoftShadowSprite.anchor.set(0.5);
-      catSoftShadowSprite.blendMode = 'multiply';
-      catSoftShadowSprite.alpha = CAT_SOFT_SHADOW_OPACITY;
-      app.stage.addChild(catSoftShadowSprite);
+      let catSoftShadowView: Sprite | MeshPlane;
+      let catAoShadowView: Sprite | MeshPlane;
+      if (rig) {
+        const softMesh = new MeshPlane({
+          texture: catSoftShadowTexture,
+          verticesX: CAT_SOFT_SHADOW_VERTS,
+          verticesY: CAT_SOFT_SHADOW_VERTS,
+        });
+        softMesh.pivot.set(
+          catSoftShadowInfo.canvasW / 2,
+          catSoftShadowInfo.canvasH / 2,
+        );
+        catSoftShadowView = softMesh;
 
-      const catAoShadowSprite = new Sprite(catAoShadowTexture);
-      catAoShadowSprite.anchor.set(0.5);
-      catAoShadowSprite.blendMode = 'multiply';
-      catAoShadowSprite.alpha = CAT_AO_SHADOW_OPACITY;
-      app.stage.addChild(catAoShadowSprite);
+        const aoMesh = new MeshPlane({
+          texture: catAoShadowTexture,
+          verticesX: CAT_AO_SHADOW_VERTS,
+          verticesY: CAT_AO_SHADOW_VERTS,
+        });
+        aoMesh.pivot.set(
+          catAoShadowInfo.canvasW / 2,
+          catAoShadowInfo.canvasH / 2,
+        );
+        catAoShadowView = aoMesh;
+      } else {
+        const softSprite = new Sprite(catSoftShadowTexture);
+        softSprite.anchor.set(0.5);
+        catSoftShadowView = softSprite;
 
-      // === Layer (c): Cat photo with fur displacement ===
+        const aoSprite = new Sprite(catAoShadowTexture);
+        aoSprite.anchor.set(0.5);
+        catAoShadowView = aoSprite;
+      }
+
+      catSoftShadowView.blendMode = 'multiply';
+      catSoftShadowView.alpha = CAT_SOFT_SHADOW_OPACITY;
+      app.stage.addChild(catSoftShadowView);
+
+      catAoShadowView.blendMode = 'multiply';
+      catAoShadowView.alpha = CAT_AO_SHADOW_OPACITY;
+      app.stage.addChild(catAoShadowView);
+
+      // === Layer (c): Cat photo MeshPlane (40x40 segments) + fur displacement ===
       const catContainer = new Container();
       app.stage.addChild(catContainer);
 
-      const catSprite = new Sprite(catTexture);
-      catSprite.anchor.set(0.5);
-      catContainer.addChild(catSprite);
+      const catMesh = new MeshPlane({
+        texture: catTexture,
+        verticesX: CAT_MESH_VERTS_X,
+        verticesY: CAT_MESH_VERTS_Y,
+      });
+      catMesh.pivot.set(catTexture.width / 2, catTexture.height / 2);
+      catContainer.addChild(catMesh);
 
       const dispSprite = new Sprite(dispMap);
       dispSprite.anchor.set(0.5);
@@ -845,9 +1064,40 @@ export function PetStage({
       displacementFilter = new DisplacementFilter({
         sprite: dispSprite,
         scale: reducedMotion ? 5 : 11,
-        padding: 24,
+        padding: 32,
       });
-      catSprite.filters = [displacementFilter];
+      catMesh.filters = [displacementFilter];
+
+      // Optional 2D living rig bound to cat mesh and contact shadow meshes
+      const catRig = rig ? new CatRig(rig, reducedMotion) : null;
+      const catMeshBinding: CatRigMeshBinding | null = catRig
+        ? catRig.bindMesh(catMesh, CAT_MESH_VERTS_X, CAT_MESH_VERTS_Y)
+        : null;
+      const catSoftShadowBinding: CatRigMeshBinding | null =
+        catRig && catSoftShadowView instanceof MeshPlane
+          ? catRig.bindMesh(
+              catSoftShadowView,
+              CAT_SOFT_SHADOW_VERTS,
+              CAT_SOFT_SHADOW_VERTS,
+              computeShadowUvRect(catSoftShadowInfo),
+            )
+          : null;
+      const catAoShadowBinding: CatRigMeshBinding | null =
+        catRig && catAoShadowView instanceof MeshPlane
+          ? catRig.bindMesh(
+              catAoShadowView,
+              CAT_AO_SHADOW_VERTS,
+              CAT_AO_SHADOW_VERTS,
+              computeShadowUvRect(catAoShadowInfo),
+            )
+          : null;
+
+      let rigDebugGraphics: Graphics | null = null;
+      if (showRigDebug && catRig && catMeshBinding) {
+        rigDebugGraphics = new Graphics();
+        rigDebugGraphics.pivot.set(catTexture.width / 2, catTexture.height / 2);
+        catContainer.addChild(rigDebugGraphics);
+      }
 
       // === Layer (d): Arm shadows (tight when pressing on cat, lifted when hovering off) ===
       let armTightScaleRatioX = armTexture.width / armTightShadowInfo.contentW;
@@ -973,20 +1223,20 @@ export function PetStage({
         catContainer.position.set(catCenterX, catCenterY);
         catContainer.scale.set(catBaseScale);
 
-        catSoftShadowSprite.position.set(
+        catSoftShadowView.position.set(
           catCenterX + CAT_SOFT_SHADOW_OFFSET,
           catCenterY + CAT_SOFT_SHADOW_OFFSET,
         );
-        catSoftShadowSprite.scale.set(
+        catSoftShadowView.scale.set(
           catBaseScale * catSoftScaleRatioX,
           catBaseScale * catSoftScaleRatioY,
         );
 
-        catAoShadowSprite.position.set(
+        catAoShadowView.position.set(
           catCenterX + CAT_AO_SHADOW_OFFSET,
           catCenterY + CAT_AO_SHADOW_OFFSET,
         );
-        catAoShadowSprite.scale.set(
+        catAoShadowView.scale.set(
           catBaseScale * catAoScaleRatioX,
           catBaseScale * catAoScaleRatioY,
         );
@@ -1039,6 +1289,7 @@ export function PetStage({
 
       const onMotionChange = (e: MediaQueryListEvent) => {
         reducedMotion = e.matches;
+        catRig?.setReducedMotion(reducedMotion);
         updateFilterScale();
       };
       motionQuery?.addEventListener('change', onMotionChange);
@@ -1090,6 +1341,92 @@ export function PetStage({
       let overpetTimer = 0;
       let nipCooldown = 0;
       let nipFlinchTimer = 0;
+
+      // Living rig trigger state
+      let wasActivelyPetting = false;
+      let skinTwitchCooldown = 0;
+      let hasStretchedAtFull = false;
+      let lastAutoRigMood: RigMood = 'calm';
+
+      // Lightweight frame-time tracker (active only when ?rig=1)
+      const FRAME_STATS_CAP = 300;
+      const frameTimes = showRigDebug ? new Float32Array(FRAME_STATS_CAP) : null;
+      const rigTimes = showRigDebug ? new Float32Array(FRAME_STATS_CAP) : null;
+      let frameStatsCount = 0;
+      let frameStatsCursor = 0;
+
+      const triggerNip = () => {
+        overpetTimer = 0;
+        nipCooldown = 1.0;
+        nipFlinchTimer = 0.2;
+        meter = 0.82;
+        purr.stopPetting();
+        purr.triggerNipHaptic();
+        if (catRig) {
+          lastAutoRigMood = 'annoyed';
+          catRig.setMood('annoyed');
+          catRig.play('tailAnnoyed');
+        }
+      };
+
+      if (showRigDebug && catRig && catMeshBinding && typeof window !== 'undefined') {
+        const computePercentile = (buf: Float32Array, count: number, p: number) => {
+          if (count === 0) return 0;
+          const sorted = Array.from(buf.subarray(0, count)).sort((a, b) => a - b);
+          const idx = Math.min(sorted.length - 1, Math.floor(sorted.length * p));
+          return sorted[idx];
+        };
+
+        const handle: PurrRigDebugHandle = {
+          play: (action) => catRig.play(action),
+          setMood: (m) => catRig.setMood(m),
+          getState: () => catRig.getDebugState(),
+          setMeterForTest: (value) => {
+            meter = clamp(value, 0, 1);
+            lastPetTimeMs = performance.now();
+            idleSincePet = 0;
+            if (meter < 0.9) hasStretchedAtFull = false;
+          },
+          triggerNipForTest: () => triggerNip(),
+          getFrameStats: () => {
+            if (!frameTimes || !rigTimes || frameStatsCount === 0) {
+              return {
+                samples: 0,
+                avgFrameMs: 0,
+                p95FrameMs: 0,
+                maxFrameMs: 0,
+                avgRigMs: 0,
+                p95RigMs: 0,
+                vertexCount: catMeshBinding.vertexCount,
+              };
+            }
+            let sumFrame = 0;
+            let maxFrame = 0;
+            let sumRig = 0;
+            for (let i = 0; i < frameStatsCount; i++) {
+              const f = frameTimes[i];
+              sumFrame += f;
+              if (f > maxFrame) maxFrame = f;
+              sumRig += rigTimes[i];
+            }
+            return {
+              samples: frameStatsCount,
+              avgFrameMs: sumFrame / frameStatsCount,
+              p95FrameMs: computePercentile(frameTimes, frameStatsCount, 0.95),
+              maxFrameMs: maxFrame,
+              avgRigMs: sumRig / frameStatsCount,
+              p95RigMs: computePercentile(rigTimes, frameStatsCount, 0.95),
+              vertexCount: catMeshBinding.vertexCount,
+            };
+          },
+          resetFrameStats: () => {
+            frameStatsCount = 0;
+            frameStatsCursor = 0;
+          },
+        };
+        registeredDebugHandle = handle;
+        window.__purrRig = handle;
+      }
 
       let lastReportedPct = 0;
       let lastReportedMood: PetMood = 'idle';
@@ -1337,6 +1674,7 @@ export function PetStage({
         activeTouchId = null;
         handWanted = false;
         isOverCat = false;
+        wasActivelyPetting = false;
         pointerMode = 'none';
         prevPetPoint = null;
         hasSmoothedDir = false;
@@ -1350,6 +1688,7 @@ export function PetStage({
         if (pointerMode === 'mouse') {
           handWanted = false;
           isOverCat = false;
+          wasActivelyPetting = false;
           pointerMode = 'none';
           prevPetPoint = null;
           hasSmoothedDir = false;
@@ -1403,6 +1742,7 @@ export function PetStage({
         if (pointerMode === 'keyboard') {
           handWanted = false;
           isOverCat = false;
+          wasActivelyPetting = false;
           pointerMode = 'none';
           prevPetPoint = null;
           hasSmoothedDir = false;
@@ -1443,6 +1783,9 @@ export function PetStage({
 
         if (nipCooldown > 0) {
           nipCooldown = Math.max(0, nipCooldown - wallDt);
+        }
+        if (skinTwitchCooldown > 0) {
+          skinTwitchCooldown = Math.max(0, skinTwitchCooldown - wallDt);
         }
 
         // Virtual hand keyboard navigation when stage is focused
@@ -1496,6 +1839,9 @@ export function PetStage({
         let pettedThisFrame = false;
         let frameDistance = 0;
         let frameMaxSpeed = 0;
+        let firstStrokeU = 0;
+        let firstStrokeV = 0;
+        let hasFirstStrokePoint = false;
 
         if (pendingSamples.length > 0) {
           for (let i = 0; i < pendingSamples.length; i++) {
@@ -1528,6 +1874,11 @@ export function PetStage({
               frameMaxSpeed = Math.max(frameMaxSpeed, instSpeed);
               frameDistance += dist;
               pettedThisFrame = true;
+              if (!hasFirstStrokePoint) {
+                firstStrokeU = prevHit.hit ? prevHit.u : currHit.u;
+                firstStrokeV = prevHit.hit ? prevHit.v : currHit.v;
+                hasFirstStrokePoint = true;
+              }
 
               const localDx = currHit.localX - prevHit.localX;
               const localDy = currHit.localY - prevHit.localY;
@@ -1585,6 +1936,23 @@ export function PetStage({
           }
         }
 
+        // Skin twitch when a new stroke starts on the back
+        if (pettedThisFrame && nipCooldown <= 0) {
+          if (
+            catRig &&
+            !wasActivelyPetting &&
+            skinTwitchCooldown <= 0 &&
+            hasFirstStrokePoint &&
+            catRig.isPointOnBack(firstStrokeU, firstStrokeV)
+          ) {
+            catRig.play('skinTwitch');
+            skinTwitchCooldown = 0.8;
+          }
+          wasActivelyPetting = true;
+        } else if (strokeGraceTimer <= 0) {
+          wasActivelyPetting = false;
+        }
+
         // Over-petting check: very fast rubbing at ~100% for > 3 s -> quick flinch + 1 s cooldown
         const veryFastThreshold = catVisibleW * 1.75;
         if (
@@ -1595,15 +1963,27 @@ export function PetStage({
         ) {
           overpetTimer += dt;
           if (overpetTimer >= 3.0) {
-            overpetTimer = 0;
-            nipCooldown = 1.0;
-            nipFlinchTimer = 0.2;
-            meter = 0.82;
-            purr.stopPetting();
-            purr.triggerNipHaptic();
+            triggerNip();
           }
         } else {
           overpetTimer = Math.max(0, overpetTimer - dt * 1.1);
+        }
+
+        // Stretch when purr meter reaches 100%; happy tail above 33%
+        if (meter >= 0.995 && nipCooldown <= 0) {
+          if (!hasStretchedAtFull) {
+            hasStretchedAtFull = true;
+            catRig?.play('stretch');
+          }
+        } else if (meter < 0.9) {
+          hasStretchedAtFull = false;
+        }
+
+        const nextAutoRigMood: RigMood =
+          nipCooldown > 0 ? 'annoyed' : meter > 0.33 ? 'happy' : 'calm';
+        if (catRig && nextAutoRigMood !== lastAutoRigMood) {
+          lastAutoRigMood = nextAutoRigMood;
+          catRig.setMood(nextAutoRigMood);
         }
 
         // Update purr audio & haptics
@@ -1618,7 +1998,7 @@ export function PetStage({
           normalizedAudioSpeed,
         );
 
-        // === Realistic cat life (breathing, subtle melt at 100%, small 2-3 px nip flinch) ===
+        // === Realistic cat life (2D living rig or fallback breathing, subtle melt, nip flinch) ===
         if (nipFlinchTimer > 0) {
           nipFlinchTimer = Math.max(0, nipFlinchTimer - dt);
         }
@@ -1637,29 +2017,97 @@ export function PetStage({
         let reactScaleY = 1;
         let flinchX = 0;
         let flinchY = 0;
+        let rigElapsedMs = 0;
 
-        if (!reducedMotion) {
-          // Slow breathing: 1.000-1.012 at ~0.4 Hz, slowing & deepening as purr meter rises
-          const breathFreqHz = 0.4 - meter * 0.14; // 0.40 Hz -> 0.26 Hz
-          const breathDepth = 0.012 + meter * 0.008; // 1.2% -> 2.0%
+        if (catRig && catMeshBinding) {
+          const rigStartMs = showRigDebug ? performance.now() : 0;
+
+          let handDistToHeadPx: number | null = null;
+          if (handWanted) {
+            const headStageX =
+              catCenterX +
+              (catRig.data.head.x - 0.5) * catTexture!.width * catBaseScale;
+            const headStageY =
+              catCenterY +
+              (catRig.data.head.y - 0.5) * catTexture!.height * catBaseScale;
+            handDistToHeadPx = Math.hypot(
+              handX - headStageX,
+              handY - headStageY,
+            );
+          }
+
+          catRig.setPurrLevel(meter);
+          catRig.update(dt, { handDistToHeadPx });
+          catRig.applyToMesh(catMeshBinding);
+          if (catAoShadowBinding) {
+            catRig.applyToMesh(catAoShadowBinding);
+          }
+          if (catSoftShadowBinding) {
+            catRig.applyToMesh(catSoftShadowBinding);
+          }
+
+          if (rigDebugGraphics) {
+            drawRigDebugOverlay(
+              rigDebugGraphics,
+              catMeshBinding,
+              catRig.getDebugState(),
+              catTexture!.width,
+              catTexture!.height,
+              catBaseScale,
+            );
+          }
+
+          if (showRigDebug) {
+            rigElapsedMs = performance.now() - rigStartMs;
+          }
+
+          if (!reducedMotion) {
+            // Subtle melt at 100% takes over seamlessly as the stretch relaxes
+            const meltWeight = meltEased * (1 - catRig.getStretchAmount());
+            if (meltWeight > 0.0005) {
+              reactScaleX *= 1 + 0.015 * meltWeight;
+              reactScaleY *= 1 - 0.01 * meltWeight;
+            }
+
+            // Nip flinch: 2-3 px quick jitter over 200 ms
+            if (nipFlinchTimer > 0) {
+              const p = 1 - nipFlinchTimer / 0.2;
+              const env = Math.sin(p * Math.PI) * (1 - p * 0.35);
+              flinchX = Math.sin(p * Math.PI * 5) * 2.6 * env;
+              flinchY = Math.cos(p * Math.PI * 4) * 1.8 * env;
+            }
+          }
+        } else {
+          // Fallback for unrigged cats (e.g. onboarding preview): breathing + melt + nip flinch
+          const breathFreqHz = reducedMotion ? 0.35 : 0.4 - meter * 0.14;
+          const breathDepth = reducedMotion ? 0.005 : 0.012 + meter * 0.008;
           breathPhase += dt * breathFreqHz * Math.PI * 2;
-          const breathWave = 0.5 * (1 - Math.cos(breathPhase)); // [0, 1]
+          const breathWave = 0.5 * (1 - Math.cos(breathPhase));
           const breathScale = 1 + breathDepth * breathWave;
           reactScaleX *= breathScale;
           reactScaleY *= breathScale;
 
-          // Subtle melt at 100%: scale-x +1.5%, scale-y -1% eased over 1.5 s
-          if (meltEased > 0.0005) {
-            reactScaleX *= 1 + 0.015 * meltEased;
-            reactScaleY *= 1 - 0.01 * meltEased;
-          }
+          if (!reducedMotion) {
+            if (meltEased > 0.0005) {
+              reactScaleX *= 1 + 0.015 * meltEased;
+              reactScaleY *= 1 - 0.01 * meltEased;
+            }
 
-          // Nip flinch: 2-3 px quick jitter over 200 ms
-          if (nipFlinchTimer > 0) {
-            const p = 1 - nipFlinchTimer / 0.2;
-            const env = Math.sin(p * Math.PI) * (1 - p * 0.35);
-            flinchX = Math.sin(p * Math.PI * 5) * 2.6 * env;
-            flinchY = Math.cos(p * Math.PI * 4) * 1.8 * env;
+            if (nipFlinchTimer > 0) {
+              const p = 1 - nipFlinchTimer / 0.2;
+              const env = Math.sin(p * Math.PI) * (1 - p * 0.35);
+              flinchX = Math.sin(p * Math.PI * 5) * 2.6 * env;
+              flinchY = Math.cos(p * Math.PI * 4) * 1.8 * env;
+            }
+          }
+        }
+
+        if (frameTimes && rigTimes) {
+          frameTimes[frameStatsCursor] = ticker.deltaMS;
+          rigTimes[frameStatsCursor] = rigElapsedMs;
+          frameStatsCursor = (frameStatsCursor + 1) % FRAME_STATS_CAP;
+          if (frameStatsCount < FRAME_STATS_CAP) {
+            frameStatsCount++;
           }
         }
 
@@ -1670,21 +2118,21 @@ export function PetStage({
         );
         catContainer.rotation = 0;
 
-        // Two-layer cat shadows share breathing, melt, and flinch with the cat
-        catSoftShadowSprite.position.set(
+        // Two-layer cat shadows share melt, flinch, and rig deformation with the cat
+        catSoftShadowView.position.set(
           catCenterX + CAT_SOFT_SHADOW_OFFSET + flinchX,
           catCenterY + CAT_SOFT_SHADOW_OFFSET + flinchY,
         );
-        catSoftShadowSprite.scale.set(
+        catSoftShadowView.scale.set(
           catBaseScale * catSoftScaleRatioX * reactScaleX,
           catBaseScale * catSoftScaleRatioY * reactScaleY,
         );
 
-        catAoShadowSprite.position.set(
+        catAoShadowView.position.set(
           catCenterX + CAT_AO_SHADOW_OFFSET + flinchX,
           catCenterY + CAT_AO_SHADOW_OFFSET + flinchY,
         );
-        catAoShadowSprite.scale.set(
+        catAoShadowView.scale.set(
           catBaseScale * catAoScaleRatioX * reactScaleX,
           catBaseScale * catAoScaleRatioY * reactScaleY,
         );
@@ -1830,7 +2278,7 @@ export function PetStage({
       cancelled = true;
       safeDestroy();
     };
-  }, [imageUrl, bgUrl]);
+  }, [imageUrl, bgUrl, rig]);
 
   const displayName = catName || t('cat.defaultName');
 
