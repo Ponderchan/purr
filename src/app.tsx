@@ -3,6 +3,7 @@ import { useEffect, useState } from 'preact/hooks';
 import { LocationProvider, Route, Router, useLocation } from 'preact-iso';
 import bgPhotoUrl from './assets/photo/bg.webp';
 import sampleCatUrl from './assets/photo/sample-cat.webp';
+import { t } from './i18n';
 import type { PetStageProps } from './pet/PetStage';
 
 const STATIC_ROUTES = new Set([
@@ -14,8 +15,12 @@ const STATIC_ROUTES = new Set([
   '/terms',
 ]);
 
+function normalizePath(path: string): string {
+  return path.length > 1 && path.endsWith('/') ? path.slice(0, -1) : path;
+}
+
 function isCatRoute(path: string): boolean {
-  const normalized = path.length > 1 && path.endsWith('/') ? path.slice(0, -1) : path;
+  const normalized = normalizePath(path);
   if (STATIC_ROUTES.has(normalized)) return false;
   const segments = normalized.split('/').filter(Boolean);
   return segments.length === 1;
@@ -37,21 +42,14 @@ interface PlaceholderProps {
   eyebrow: string;
   title: string;
   description: string;
-  badge?: string;
 }
 
-function PlaceholderPage({
-  eyebrow,
-  title,
-  description,
-  badge,
-}: PlaceholderProps) {
+function PlaceholderPage({ eyebrow, title, description }: PlaceholderProps) {
   return (
     <section class="page-card">
       <p class="page-eyebrow">{eyebrow}</p>
       <h1 class="page-title">{title}</h1>
       <p class="page-body">{description}</p>
-      {badge ? <p class="slug-badge">{badge}</p> : null}
     </section>
   );
 }
@@ -59,9 +57,9 @@ function PlaceholderPage({
 function FeedPage() {
   return (
     <PlaceholderPage
-      eyebrow="Feed"
-      title="Cats ready for pets"
-      description="The live cat feed and Cat of the Day will appear here."
+      eyebrow={t('page.lobby.eyebrow')}
+      title={t('page.lobby.title')}
+      description={t('page.lobby.body')}
     />
   );
 }
@@ -69,9 +67,9 @@ function FeedPage() {
 function UploadPage() {
   return (
     <PlaceholderPage
-      eyebrow="Upload"
-      title="Add your cat"
-      description="Upload a photo, cut out your cat, and publish a shareable purr.si link."
+      eyebrow={t('page.onboard.eyebrow')}
+      title={t('page.onboard.title')}
+      description={t('page.onboard.body')}
     />
   );
 }
@@ -79,9 +77,9 @@ function UploadPage() {
 function DashboardPage() {
   return (
     <PlaceholderPage
-      eyebrow="Dashboard"
-      title="Your cats"
-      description="Track total pets, pets today, and countries petting your cats."
+      eyebrow={t('page.staffRoom.eyebrow')}
+      title={t('page.staffRoom.title')}
+      description={t('page.staffRoom.body')}
     />
   );
 }
@@ -89,9 +87,9 @@ function DashboardPage() {
 function AboutPage() {
   return (
     <PlaceholderPage
-      eyebrow="About"
-      title="About purr.si"
-      description="Upload your cat, share a link, and let the whole world pet them."
+      eyebrow={t('page.about.eyebrow')}
+      title={t('page.about.title')}
+      description={t('page.about.body')}
     />
   );
 }
@@ -99,9 +97,9 @@ function AboutPage() {
 function PrivacyPage() {
   return (
     <PlaceholderPage
-      eyebrow="Privacy"
-      title="Privacy policy"
-      description="Privacy details and data handling information will be published here."
+      eyebrow={t('page.privacy.eyebrow')}
+      title={t('page.privacy.title')}
+      description={t('page.privacy.body')}
     />
   );
 }
@@ -109,9 +107,9 @@ function PrivacyPage() {
 function TermsPage() {
   return (
     <PlaceholderPage
-      eyebrow="Terms"
-      title="Terms of service"
-      description="Terms of use and reporting guidelines will be published here."
+      eyebrow={t('page.terms.eyebrow')}
+      title={t('page.terms.title')}
+      description={t('page.terms.body')}
     />
   );
 }
@@ -119,15 +117,83 @@ function TermsPage() {
 function NotFoundPage() {
   return (
     <section class="page-card">
-      <p class="page-eyebrow">404</p>
-      <h1 class="page-title">Page not found</h1>
-      <p class="page-body">
-        There is no cat curled up at this address.
+      <p class="page-eyebrow">
+        <span class="num">404</span>
       </p>
-      <a href="/" class="page-action-link">
-        Back to feed
-      </a>
+      <h1 class="page-title">{t('page.notFound.title')}</h1>
+      <p class="page-body">{t('page.notFound.body')}</p>
+      <div class="page-card-actions">
+        <a href="/" class="btn-primary">
+          {t('page.notFound.backHome')}
+        </a>
+      </div>
     </section>
+  );
+}
+
+function StageStaticTopOverlays({ displayName }: { displayName: string }) {
+  return (
+    <>
+      <div class="stage-mobile-bar">
+        <a href="/" class="overlay-icon-btn" aria-label={t('cat.backToLobby')}>
+          <svg
+            aria-hidden="true"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M15 5l-7 7 7 7" />
+          </svg>
+        </a>
+
+        <div class="mobile-badge-chip">
+          <span class="mobile-badge-avatar">
+            <img src={sampleCatUrl} alt="" class="cat-avatar-img" />
+          </span>
+          <span class="mobile-badge-text">
+            <span class="mobile-badge-name">{displayName}</span>
+            <span class="mobile-badge-status">
+              <span class="status-dot" aria-hidden="true" />
+              {t('cat.mobileStatus')}
+            </span>
+          </span>
+        </div>
+
+        <button
+          type="button"
+          class="overlay-icon-btn"
+          aria-label={t('cat.moreActions')}
+        >
+          <svg
+            aria-hidden="true"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+          >
+            <circle cx="5" cy="12" r="1.8" />
+            <circle cx="12" cy="12" r="1.8" />
+            <circle cx="19" cy="12" r="1.8" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="stage-web-top">
+        <span class="overlay-chip">
+          <span class="status-dot" aria-hidden="true" />
+          <span>
+            {t('cat.webStatusBeforeTime', { name: displayName })}
+            <span class="num">{t('cat.webStatusTime')}</span>
+            {t('cat.webStatusAfterTime')}
+          </span>
+        </span>
+      </div>
+    </>
   );
 }
 
@@ -137,6 +203,7 @@ interface CatPageProps {
 
 function CatPage({ slug }: CatPageProps) {
   const catName = formatCatName(slug);
+  const displayName = catName || t('cat.defaultName');
   const [StageComponent, setStageComponent] =
     useState<ComponentType<PetStageProps> | null>(() => cachedPetStage);
   const [loadFailed, setLoadFailed] = useState(false);
@@ -170,68 +237,304 @@ function CatPage({ slug }: CatPageProps) {
     };
   }, []);
 
+  let stageContent;
   if (loadFailed) {
-    return (
-      <section class="cat-page">
-        <div
-          class="pet-stage pet-stage--fallback"
-          style={{ backgroundImage: `url(${bgPhotoUrl})` }}
-        >
-          <img
-            src={sampleCatUrl}
-            alt={catName ? `${catName} curled up on a blanket` : 'Cat on a blanket'}
-            class="pet-fallback-cat"
-          />
-          <div class="pet-fallback-light" aria-hidden="true" />
-          {catName ? <h1 class="pet-cat-label">{catName}</h1> : null}
-          <p class="pet-fallback-message" role="status">
-            Your browser can&apos;t show petting here, but the cat still loves you.
-          </p>
-        </div>
-      </section>
+    stageContent = (
+      <div
+        class="pet-stage pet-stage--fallback"
+        style={{ backgroundImage: `url(${bgPhotoUrl})` }}
+      >
+        <img
+          src={sampleCatUrl}
+          alt={
+            catName
+              ? t('pet.fallbackAlt', { name: catName })
+              : t('pet.fallbackAltGeneric')
+          }
+          class="pet-fallback-cat"
+        />
+        <div class="pet-fallback-light" aria-hidden="true" />
+        <StageStaticTopOverlays displayName={displayName} />
+        <p class="pet-stage-notice" role="status">
+          {t('pet.fallbackMessage', { name: displayName })}
+        </p>
+      </div>
+    );
+  } else if (StageComponent) {
+    stageContent = (
+      <StageComponent
+        imageUrl={sampleCatUrl}
+        bgUrl={bgPhotoUrl}
+        catName={catName}
+      />
+    );
+  } else {
+    stageContent = (
+      <div
+        class="pet-stage pet-stage--loading"
+        style={{ backgroundImage: `url(${bgPhotoUrl})` }}
+        aria-busy="true"
+        aria-label={t('pet.loadingAria')}
+      >
+        <StageStaticTopOverlays displayName={displayName} />
+        <p class="pet-stage-notice" role="status">
+          {t('pet.loading', { name: displayName })}
+        </p>
+      </div>
     );
   }
 
   return (
-    <section class="cat-page">
-      {StageComponent ? (
-        <StageComponent
-          imageUrl={sampleCatUrl}
-          bgUrl={bgPhotoUrl}
-          catName={catName}
-        />
-      ) : (
-        <div
-          class="pet-stage pet-stage--loading"
-          style={{ backgroundImage: `url(${bgPhotoUrl})` }}
-          aria-busy="true"
-          aria-label="Loading cat petting stage"
-        >
-          {catName ? <h1 class="pet-cat-label">{catName}</h1> : null}
+    <div class="cat-room-layout">
+      <section
+        class="cat-room-stage"
+        aria-label={t('cat.stageSectionLabel', { name: displayName })}
+      >
+        {stageContent}
+      </section>
+
+      <aside class="cat-room-panel">
+        <div class="employee-badge">
+          <span class="employee-badge-avatar">
+            <img
+              src={sampleCatUrl}
+              alt={t('cat.avatarAlt', { name: displayName })}
+              class="cat-avatar-img"
+            />
+          </span>
+          <div class="employee-badge-info">
+            <div class="employee-badge-heading">
+              <h1 class="employee-badge-name">{displayName}</h1>
+              <span class="employee-badge-role">{t('cat.officialBadge')}</span>
+            </div>
+            <span class="employee-badge-meta">
+              {t('cat.badgeLocation')} · {t('cat.badgeDaysBefore')}
+              <span class="num">128</span>
+              {t('cat.badgeDaysAfter')} · <span class="num">12,480</span>
+              {t('cat.badgeGuestsAfter')}
+            </span>
+            <span class="employee-badge-tags">
+              <span class="personality-tag">{t('cat.tagClingy')}</span>
+              <span class="personality-tag">{t('cat.tagFoodie')}</span>
+            </span>
+          </div>
         </div>
-      )}
-    </section>
+
+        <div class="panel-footer-actions">
+          <button type="button" class="btn-outline">
+            <svg
+              aria-hidden="true"
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M12 3v12M8 7l4-4 4 4M5 13v6h14v-6" />
+            </svg>
+            {t('cat.shareCat', { name: displayName })}
+          </button>
+          <a
+            href="#report"
+            class="panel-report-link"
+            onClick={(e) => e.preventDefault()}
+          >
+            {t('cat.reportHide')}
+          </a>
+        </div>
+      </aside>
+    </div>
+  );
+}
+
+function WebHeader({ isCat, currentPath }: { isCat: boolean; currentPath: string }) {
+  if (isCat) {
+    return (
+      <header class="web-header web-header--cat">
+        <a href="/" class="web-wordmark web-wordmark--grow">
+          <span class="web-wordmark-brand">purr.si</span>
+          <span class="web-wordmark-sub">{t('brand.subtitle')}</span>
+        </a>
+        <a href="/" class="web-header-text-link">
+          {t('nav.browseLobby')}
+        </a>
+        <a href="/new" class="btn-outline btn-outline--ink">
+          {t('nav.sendCatToWork')}
+        </a>
+      </header>
+    );
+  }
+
+  return (
+    <header class="web-header web-header--shell">
+      <a href="/" class="web-wordmark">
+        <span class="web-wordmark-brand">purr.si</span>
+        <span class="web-wordmark-sub">{t('brand.subtitle')}</span>
+      </a>
+
+      <nav class="web-nav" aria-label={t('nav.mainLabel')}>
+        <a
+          href="/"
+          class="web-nav-pill"
+          aria-current={currentPath === '/' ? 'page' : undefined}
+        >
+          {t('nav.lobby')}
+        </a>
+        <a
+          href="#honor"
+          class="web-nav-pill web-nav-pill--placeholder"
+          aria-disabled="true"
+          onClick={(e) => e.preventDefault()}
+        >
+          {t('nav.honor')}
+        </a>
+        <a
+          href="#guest"
+          class="web-nav-pill web-nav-pill--placeholder"
+          aria-disabled="true"
+          onClick={(e) => e.preventDefault()}
+        >
+          {t('nav.guestCard')}
+        </a>
+        <a
+          href="/me"
+          class="web-nav-pill"
+          aria-current={currentPath === '/me' ? 'page' : undefined}
+        >
+          {t('nav.staffRoom')}
+        </a>
+      </nav>
+
+      <div class="web-header-actions">
+        <a href="/new" class="btn-primary btn-primary--compact">
+          <svg
+            aria-hidden="true"
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.2"
+            stroke-linecap="round"
+          >
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+          {t('nav.sendCatToWork')}
+        </a>
+      </div>
+    </header>
+  );
+}
+
+function MobileTabBar({ currentPath }: { currentPath: string }) {
+  return (
+    <nav class="mobile-tab-bar" aria-label={t('nav.mainLabel')}>
+      <a
+        href="/"
+        class="mobile-tab-item"
+        aria-current={currentPath === '/' ? 'page' : undefined}
+      >
+        <svg
+          aria-hidden="true"
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M4 11l8-6 8 6v8a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z" />
+          <path d="M10 20v-5h4v5" />
+        </svg>
+        {t('nav.lobby')}
+      </a>
+
+      <a
+        href="#honor"
+        class="mobile-tab-item"
+        aria-disabled="true"
+        onClick={(e) => e.preventDefault()}
+      >
+        <svg
+          aria-hidden="true"
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M8 4h8v5a4 4 0 0 1-8 0z" />
+          <path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M9 20h6" />
+        </svg>
+        {t('nav.honor')}
+      </a>
+
+      <a
+        href="#guest"
+        class="mobile-tab-item"
+        aria-disabled="true"
+        onClick={(e) => e.preventDefault()}
+      >
+        <svg
+          aria-hidden="true"
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <rect x="3" y="6" width="18" height="13" rx="2" />
+          <path d="M3 10h18M7 15h4" />
+        </svg>
+        {t('nav.guestCard')}
+      </a>
+
+      <a
+        href="/me"
+        class="mobile-tab-item"
+        aria-current={currentPath === '/me' ? 'page' : undefined}
+      >
+        <svg
+          aria-hidden="true"
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <rect x="4" y="7" width="16" height="13" rx="2" />
+          <path d="M9 7V5h6v2M4 12h16" />
+        </svg>
+        {t('nav.staffRoom')}
+      </a>
+    </nav>
   );
 }
 
 function AppShell() {
   const { path } = useLocation();
-  const immersive = isCatRoute(path);
+  const currentPath = normalizePath(path);
+  const isCat = isCatRoute(path);
 
   return (
-    <div class={`app-shell${immersive ? ' app-shell--immersive' : ''}`}>
-      <header class={`top-bar${immersive ? ' top-bar--overlay' : ''}`}>
-        <div class="top-bar-inner">
-          <a href="/" class="wordmark">
-            purr.si
-          </a>
-          <a href="/new" class="add-cat-link">
-            + Add your cat
-          </a>
-        </div>
-      </header>
+    <div class={`app-shell${isCat ? ' app-shell--cat' : ''}`}>
+      <WebHeader isCat={isCat} currentPath={currentPath} />
 
-      <main class={`main-content${immersive ? ' main-content--immersive' : ''}`}>
+      <main class={`main-content${isCat ? ' main-content--cat' : ''}`}>
         <Router>
           <Route path="/" component={FeedPage} />
           <Route path="/new" component={UploadPage} />
@@ -243,6 +546,8 @@ function AppShell() {
           <Route default component={NotFoundPage} />
         </Router>
       </main>
+
+      {isCat ? null : <MobileTabBar currentPath={currentPath} />}
     </div>
   );
 }

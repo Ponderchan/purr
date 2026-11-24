@@ -10,6 +10,7 @@ import {
   Texture,
 } from 'pixi.js';
 import armPhotoUrl from '../assets/photo/arm.webp';
+import { t } from '../i18n';
 import { cleanCutoutEdges } from './cleanEdges';
 import {
   PurrAudio,
@@ -441,19 +442,56 @@ function createSharedWarmLightCanvas(size = 512): HTMLCanvasElement {
   return canvas;
 }
 
-function moodCaption(mood: PetMood): string {
+function moodCaption(mood: PetMood, catName: string): string {
   switch (mood) {
     case 'nip':
-      return 'Easy there…';
+      return t('pet.moodNip', { name: catName });
     case 'melt':
-      return 'Pure bliss';
+      return t('pet.moodMelt');
     case 'purring':
-      return 'Purring';
+      return t('pet.moodPurring');
     case 'petting':
-      return 'Warming up…';
+      return t('pet.moodPetting');
     default:
-      return 'Stroke to pet';
+      return t('pet.moodIdle');
   }
+}
+
+function MuteIcon({ muted }: { muted: boolean }) {
+  if (muted) {
+    return (
+      <svg
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M4 9v6h4l5 4V5L8 9H4z" />
+        <path d="M16 9l5 6M21 9l-5 6" />
+      </svg>
+    );
+  }
+  return (
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M4 9v6h4l5 4V5L8 9H4z" />
+      <path d="M16.5 8.5a5 5 0 0 1 0 7" />
+    </svg>
+  );
 }
 
 export function PetStage({ imageUrl, bgUrl, catName }: PetStageProps) {
@@ -1793,6 +1831,128 @@ export function PetStage({ imageUrl, bgUrl, catName }: PetStageProps) {
     };
   }, [imageUrl, bgUrl]);
 
+  const displayName = catName || t('cat.defaultName');
+
+  const stopPointer = (e: Event) => {
+    e.stopPropagation();
+  };
+
+  const renderTopOverlays = (showMute: boolean) => (
+    <>
+      <div class="stage-mobile-bar">
+        <a
+          href="/"
+          class="overlay-icon-btn"
+          aria-label={t('cat.backToLobby')}
+          onPointerDown={stopPointer}
+          onPointerMove={stopPointer}
+          onPointerEnter={stopPointer}
+        >
+          <svg
+            aria-hidden="true"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M15 5l-7 7 7 7" />
+          </svg>
+        </a>
+
+        <div
+          class="mobile-badge-chip"
+          onPointerDown={stopPointer}
+          onPointerMove={stopPointer}
+          onPointerEnter={stopPointer}
+        >
+          <span class="mobile-badge-avatar">
+            <img src={imageUrl} alt="" class="cat-avatar-img" />
+          </span>
+          <span class="mobile-badge-text">
+            <span class="mobile-badge-name">{displayName}</span>
+            <span class="mobile-badge-status">
+              <span class="status-dot" aria-hidden="true" />
+              {t('cat.mobileStatus')}
+            </span>
+          </span>
+        </div>
+
+        {showMute ? (
+          <button
+            type="button"
+            class="overlay-icon-btn"
+            aria-pressed={muted}
+            aria-label={muted ? t('pet.unmute') : t('pet.mute')}
+            title={muted ? t('pet.unmuteTitle') : t('pet.muteTitle')}
+            onClick={toggleMute}
+            onPointerDown={stopPointer}
+            onPointerMove={stopPointer}
+            onPointerEnter={stopPointer}
+          >
+            <MuteIcon muted={muted} />
+          </button>
+        ) : null}
+
+        <button
+          type="button"
+          class="overlay-icon-btn"
+          aria-label={t('cat.moreActions')}
+          onPointerDown={stopPointer}
+          onPointerMove={stopPointer}
+          onPointerEnter={stopPointer}
+        >
+          <svg
+            aria-hidden="true"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+          >
+            <circle cx="5" cy="12" r="1.8" />
+            <circle cx="12" cy="12" r="1.8" />
+            <circle cx="19" cy="12" r="1.8" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="stage-web-top">
+        <span
+          class="overlay-chip"
+          onPointerDown={stopPointer}
+          onPointerMove={stopPointer}
+          onPointerEnter={stopPointer}
+        >
+          <span class="status-dot" aria-hidden="true" />
+          <span>
+            {t('cat.webStatusBeforeTime', { name: displayName })}
+            <span class="num">{t('cat.webStatusTime')}</span>
+            {t('cat.webStatusAfterTime')}
+          </span>
+        </span>
+
+        {showMute ? (
+          <button
+            type="button"
+            class="overlay-icon-btn"
+            aria-pressed={muted}
+            aria-label={muted ? t('pet.unmute') : t('pet.mute')}
+            title={muted ? t('pet.unmuteTitle') : t('pet.muteTitle')}
+            onClick={toggleMute}
+            onPointerDown={stopPointer}
+            onPointerMove={stopPointer}
+            onPointerEnter={stopPointer}
+          >
+            <MuteIcon muted={muted} />
+          </button>
+        ) : null}
+      </div>
+    </>
+  );
+
   if (initFailed) {
     return (
       <div
@@ -1801,13 +1961,17 @@ export function PetStage({ imageUrl, bgUrl, catName }: PetStageProps) {
       >
         <img
           src={imageUrl}
-          alt={catName ? `${catName} curled up on a blanket` : 'Cat on a blanket'}
+          alt={
+            catName
+              ? t('pet.fallbackAlt', { name: catName })
+              : t('pet.fallbackAltGeneric')
+          }
           class="pet-fallback-cat"
         />
         <div class="pet-fallback-light" aria-hidden="true" />
-        {catName ? <h1 class="pet-cat-label">{catName}</h1> : null}
-        <p class="pet-fallback-message" role="status">
-          Your browser can&apos;t show petting here, but the cat still loves you.
+        {renderTopOverlays(false)}
+        <p class="pet-stage-notice" role="status">
+          {t('pet.fallbackMessage', { name: displayName })}
         </p>
       </div>
     );
@@ -1820,87 +1984,11 @@ export function PetStage({ imageUrl, bgUrl, catName }: PetStageProps) {
       style={{ backgroundImage: `url(${bgUrl})` }}
       tabIndex={0}
       role="application"
-      aria-label="Interactive cat petting stage. Stroke with mouse or finger, or focus and use arrow keys to move the hand and pet."
+      aria-label={t('pet.stageAria')}
     >
       <div ref={canvasHostRef} class="pet-canvas-host" />
 
-      {catName ? <h1 class="pet-cat-label">{catName}</h1> : null}
-
-      <button
-        type="button"
-        class="pet-mute-btn"
-        aria-pressed={muted}
-        aria-label={muted ? 'Unmute purr sound' : 'Mute purr sound'}
-        title={muted ? 'Unmute purr (M)' : 'Mute purr (M)'}
-        onClick={toggleMute}
-        onPointerDown={(e) => e.stopPropagation()}
-        onPointerMove={(e) => e.stopPropagation()}
-        onPointerEnter={(e) => e.stopPropagation()}
-      >
-        {muted ? (
-          <svg
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            aria-hidden="true"
-          >
-            <path
-              d="M11 5L6 9H3v6h3l5 4V5z"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-            <line
-              x1="21"
-              y1="9"
-              x2="15"
-              y2="15"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-            />
-            <line
-              x1="15"
-              y1="9"
-              x2="21"
-              y2="15"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-            />
-          </svg>
-        ) : (
-          <svg
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            aria-hidden="true"
-          >
-            <path
-              d="M11 5L6 9H3v6h3l5 4V5z"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-            <path
-              d="M15.5 8.5a5 5 0 0 1 0 7"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-            />
-            <path
-              d="M18.8 5.8a9 9 0 0 1 0 12.4"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-            />
-          </svg>
-        )}
-      </button>
+      {renderTopOverlays(true)}
 
       <div class="purr-meter">
         <span
@@ -1909,22 +1997,17 @@ export function PetStage({ imageUrl, bgUrl, catName }: PetStageProps) {
           }`}
           aria-live="polite"
         >
-          {moodCaption(mood)}
+          {moodCaption(mood, displayName)}
         </span>
         <div
           class="purr-meter-track"
           role="progressbar"
-          aria-label="Purr meter"
+          aria-label={t('pet.meterAria')}
           aria-valuemin={0}
           aria-valuemax={100}
           aria-valuenow={meterPct}
         >
-          <div
-            ref={meterFillRef}
-            class={`purr-meter-fill${
-              mood === 'melt' ? ' purr-meter-fill--melt' : ''
-            }${mood === 'nip' ? ' purr-meter-fill--nip' : ''}`}
-          />
+          <div ref={meterFillRef} class="purr-meter-fill" />
         </div>
         <span class="purr-meter-pct">{meterPct}%</span>
       </div>
